@@ -13,7 +13,7 @@
         "type": "entry",
         "default": "",
         "description": "API Host",
-        "tooltip": "Your dedicated API Host from the QWeather console (Settings page), e.g. abc123xyz.def.qweatherapi.com. Required for city search; other requests fall back to api.qweather.com when left empty"
+        "tooltip": "Required. Your dedicated API Host from the QWeather console (Settings page), e.g. abc123xyz.def.qweatherapi.com. The legacy public api.qweather.com host is being phased out from 2026"
     },
     "location": {
         "type": "entry",
@@ -43,386 +43,75 @@
             "Indonesia": "id",
             "العربية": "ar",
             "Türkçe": "tr",
-            "Tiếng Việt": "vi"
+            "Tiếng Việt": "vi",
+            "বাংলা": "bn",
+            "Bahasa Melayu": "ms",
+            "Nederlands": "nl",
+            "Ελληνικά": "el",
+            "Latina": "la",
+            "Svenska": "sv",
+            "Polski": "pl",
+            "Čeština": "cs",
+            "Eesti": "et",
+            "Filipino": "fil",
+            "Suomi": "fi",
+            "עברית": "he",
+            "Íslenska": "is",
+            "Norsk bokmål": "nb"
         },
-        "tooltip": "Language for the weather texts returned by QWeather. 'Automatic' follows your system locale"
+        "tooltip": "Language for weather texts returned by QWeather. 'Automatic' follows the system locale when supported; otherwise QWeather chooses the location's local language with its own fallback"
     },
-    "sep1": {
-        "type": "separator"
-    },
-    "units": {
-        "type": "header",
-        "description": "Units and updates"
-    },
-    "tunits": {
-        "type": "combobox",
-        "default": "C",
-        "description": "Temperature measurement unit",
-        "options": {
-            "Celsius": "C",
-            "Fahrenheit": "F"
-        },
-        "tooltip": "Measurement units used to display temperature"
-    },
-    "wunits": {
-        "type": "combobox",
-        "default": "kph",
-        "description": "Wind speed measurement unit",
-        "options": {
-            "km/h": "kph",
-            "mph": "mph",
-            "knots": "knots",
-            "m/s": "mps"
-        },
-        "tooltip": "Measurement units used to display wind speed"
-    },
-    "windscale": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Show wind as Beaufort force",
-        "tooltip": "Show the Beaufort wind force (e.g. Force 3) instead of the wind speed"
-    },
-    "punits": {
-        "type": "combobox",
-        "default": "mb",
-        "description": "Pressure measurement unit",
-        "options": {
-            "mb": "mb",
-            "in (Hg)": "in",
-            "mm (Hg)": "mm",
-            "kPa": "kpa"
-        },
-        "tooltip": "Measurement units used to display atmospheric pressure"
-    },
-    "userno": {
-        "type": "spinbutton",
-        "default": 3,
-        "min": 3,
-        "max": 10,
-        "step": 1,
-        "units": "days",
-        "description": "Show forecast for",
-        "tooltip": "The number of days of forecast to display. Your QWeather subscription may support fewer days than requested"
-    },
-    "refreshtime": {
-        "type": "spinbutton",
-        "default": 30,
-        "min": 10,
-        "max": 90,
-        "step": 5,
-        "units": "minutes",
-        "description": "Refresh forecast every",
-        "tooltip": "Period between refreshing forecasts. QWeather data is updated every 10-20 minutes"
-    },
-    "sep2": {
-        "type": "separator"
-    },
-    "display": {
-        "type": "header",
-        "description": "Optional items to display"
-    },
-    "display__cc__weather": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Current weather and icon",
-        "tooltip": "Check to display the current weather and large icon"
-    },
-    "display__cc__feelslike": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Current 'feels like'",
-        "tooltip": "Check to display the current apparent temperature"
-    },
-    "display__cc__humidity": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Current humidity",
-        "tooltip": "Check to display the current humidity"
-    },
-    "display__cc__wind_speed": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Current wind",
-        "tooltip": "Check to display the current wind"
-    },
-    "display__cc__pressure": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Current pressure",
-        "tooltip": "Check to display the current pressure"
-    },
-    "display__cc__aqi": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Air quality (AQI)",
-        "tooltip": "Check to display the current air quality index, coloured by pollution level"
-    },
-    "display__cc__visibility": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Current visibility",
-        "tooltip": "Check to display the current visibility"
-    },
-    "display__cc__precip": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Current precipitation",
-        "tooltip": "Check to display the current precipitation of the past hour"
-    },
-    "display__cc__uv": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Current UV index",
-        "tooltip": "Check to display the current ultraviolet index"
-    },
-    "display__cc__sun": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Sunrise and sunset",
-        "tooltip": "Check to display today's sunrise and sunset times"
-    },
-    "display__hourly": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Hourly forecast",
-        "tooltip": "Check to display the forecast for the next hours"
-    },
-    "display__warning": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Severe weather warnings",
-        "tooltip": "Check to display severe weather warning banners for your location"
-    },
-    "display__forecast__maximum_temperature": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Forecast maximum",
-        "tooltip": "Check to display the forecast maximum temperature"
-    },
-    "display__forecast__minimum_temperature": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Forecast minimum",
-        "tooltip": "Check to display the forecast minimum temperature"
-    },
-    "display__forecast__wind_speed": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Forecast wind speed",
-        "tooltip": "Check to display the forecast wind speed"
-    },
-    "display__forecast__wind_direction": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Forecast wind direction",
-        "tooltip": "Check to display the forecast wind direction"
-    },
-    "display__forecast__uv": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Forecast UV index",
-        "tooltip": "Check to display the forecast maximum UV index"
-    },
-    "display__forecast__precip": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Forecast precipitation",
-        "tooltip": "Check to display the forecast daytime precipitation amount"
-    },
-    "display__meta__region": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Region",
-        "tooltip": "Check to display the region (province) after the city name"
-    },
-    "display__meta__country": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Country",
-        "tooltip": "Check to display the country after the city name"
-    },
-    "sep3": {
-        "type": "separator"
-    },
-    "styling": {
-        "type": "header",
-        "description": "Desklet style"
-    },
-    "zoom": {
-        "type": "spinbutton",
-        "default": 1.0,
-        "min": 0.5,
-        "max": 2.0,
-        "step": 0.1,
-        "units": "times",
-        "description": "Zoom by",
-        "tooltip": "Change the size of the desklet"
-    },
-    "layout": {
-        "type": "combobox",
-        "default": "0",
-        "description": "Layout",
-        "options": {
-            "Horizontal": "0",
-            "Vertical": "1"
-        },
-        "tooltip": "Set the overall layout of the desklet"
-    },
-    "iconstyle": {
-        "type": "combobox",
-        "default": "qweather",
-        "description": "Icon style",
-        "options": {
-            "QWeather (light)": "qweather",
-            "Colorful": "colourful",
-            "Dark": "dark",
-            "Light": "light",
-            "Flat colorful": "flat_colourful",
-            "Flat black": "flat_black",
-            "Flat white": "flat_white",
-            "User defined": "user"
-        },
-        "tooltip": "Select the style for the weather icons"
-    },
-    "citystyle": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Bold city name",
-        "tooltip": "Check to display the city name in bold"
-    },
-    "overrideTheme": {
-        "type": "checkbox",
-        "default": true,
-        "description": "Override desktop theme (enables the settings below)",
-        "tooltip": "Check this to override the desktop theme and configure the appearance manually"
-    },
-    "transparency": {
-        "type": "scale",
-        "indent": true,
-        "dependency": "overrideTheme",
-        "default": 0.5,
-        "min": 0.0,
-        "max": 1.0,
-        "step": 0.05,
-        "description": "Transparency",
-        "tooltip": "Set the transparency of the desklet"
-    },
-    "textcolor": {
-        "type": "colorchooser",
-        "indent": true,
-        "dependency": "overrideTheme",
-        "default": "rgb(255,255,255)",
-        "description": "Text color",
-        "tooltip": "Click the button to select a new text color"
-    },
-    "textshadow": {
-        "type": "switch",
-        "dependency": "overrideTheme",
-        "default": false,
-        "description": "Text shadow",
-        "tooltip": "Check to add a text shadow"
-    },
-    "shadowblur": {
-        "type": "spinbutton",
-        "dependency": "overrideTheme",
-        "default": 1.0,
-        "min": 1,
-        "max": 7.0,
-        "step": 1,
-        "units": "px",
-        "description": "Shadow blur radius",
-        "tooltip": "Set the text shadow sharp (1) or blurry (2-7)"
-    },
-    "bgcolor": {
-        "type": "colorchooser",
-        "indent": true,
-        "dependency": "overrideTheme",
-        "default": "rgb(0,0,0)",
-        "description": "Background color",
-        "tooltip": "Click the button to select a new background color"
-    },
-    "cornerradius": {
-        "type": "spinbutton",
-        "indent": true,
-        "dependency": "overrideTheme",
-        "default": 12.0,
-        "min": 0,
-        "max": 50.0,
-        "step": 1,
-        "units": "px",
-        "description": "Corner radius",
-        "tooltip": "Radius for rounding the desklet's corners"
-    },
-    "border": {
-        "type": "checkbox",
-        "indent": true,
-        "dependency": "overrideTheme",
-        "default": false,
-        "description": "Show border",
-        "tooltip": "Check this to turn border on/off"
-    },
-    "bordercolor": {
-        "type": "colorchooser",
-        "default": "white",
-        "description": "Border color",
-        "indent": true,
-        "dependency": "border",
-        "tooltip": "Select the color for the border. Only available if the 'Border' checkbox is enabled"
-    },
-    "borderwidth": {
-        "type": "spinbutton",
-        "default": 2,
-        "min": 1,
-        "max": 20,
-        "step": 1,
-        "units": "px",
-        "description": "Border width",
-        "indent": true,
-        "dependency": "border",
-        "tooltip": "Select the width of the border. Only available if the 'Border' checkbox is enabled"
-    },
-    "sep4": {
-        "type": "separator"
-    },
-    "locationdisplay": {
-        "type": "header",
-        "description": "Location display settings"
-    },
-    "manuallocation": {
-        "type": "entry",
-        "default": "",
-        "description": "Manually override displayed location",
-        "tooltip": "Set your city name manually"
-    },
-    "sep5": {
-        "type": "separator"
-    },
-    "experimental": {
-        "type": "header",
-        "description": "Experimental and buggy features (read documentation!!)"
-    },
-    "experimental_enabled": {
-        "type": "checkbox",
-        "default": false,
-        "description": "Enable experimental features",
-        "tooltip": "Check this to enable experimental and buggy features"
-    },
-    "gravity": {
-        "type": "combobox",
-        "default": 0,
-        "dependency": "experimental_enabled",
-        "description": "Anchor desklet by",
-        "options": {
-            "Default": 0,
-            "Top left": 8,
-            "Left center": 7,
-            "Bottom left": 6,
-            "Bottom center": 5,
-            "Bottom right": 4,
-            "Right center": 3,
-            "Top right": 2,
-            "Top center": 1
-        },
-        "tooltip": "Select the point on the desklet to which it is anchored. This point will remain static as the desklet grows and shrinks"
-    }
+    "sep1": { "type": "separator" },
+    "units": { "type": "header", "description": "Units and updates" },
+    "tunits": { "type": "combobox", "default": "C", "description": "Temperature measurement unit", "options": { "Celsius": "C", "Fahrenheit": "F" }, "tooltip": "Measurement units used to display temperature" },
+    "wunits": { "type": "combobox", "default": "kph", "description": "Wind speed measurement unit", "options": { "km/h": "kph", "mph": "mph", "knots": "knots", "m/s": "mps" }, "tooltip": "Measurement units used to display wind speed" },
+    "windscale": { "type": "checkbox", "default": false, "description": "Show wind as Beaufort force", "tooltip": "Show the Beaufort wind force (e.g. Force 3) instead of the wind speed" },
+    "punits": { "type": "combobox", "default": "mb", "description": "Pressure measurement unit", "options": { "mb": "mb", "in (Hg)": "in", "mm (Hg)": "mm", "kPa": "kpa" }, "tooltip": "Measurement units used to display atmospheric pressure" },
+    "userno": { "type": "spinbutton", "default": 3, "min": 3, "max": 10, "step": 1, "units": "days", "description": "Show forecast for", "tooltip": "The number of days of forecast to display. Your QWeather subscription may support fewer days than requested" },
+    "refreshtime": { "type": "spinbutton", "default": 30, "min": 10, "max": 90, "step": 5, "units": "minutes", "description": "Refresh forecast every", "tooltip": "Period between refreshing forecasts. QWeather data is updated every 10-20 minutes" },
+    "sep2": { "type": "separator" },
+    "display": { "type": "header", "description": "Optional items to display" },
+    "display__cc__weather": { "type": "checkbox", "default": true, "description": "Current weather and icon", "tooltip": "Check to display the current weather and large icon" },
+    "display__cc__feelslike": { "type": "checkbox", "default": true, "description": "Current 'feels like'", "tooltip": "Check to display the current apparent temperature" },
+    "display__cc__humidity": { "type": "checkbox", "default": true, "description": "Current humidity", "tooltip": "Check to display the current humidity" },
+    "display__cc__wind_speed": { "type": "checkbox", "default": true, "description": "Current wind", "tooltip": "Check to display the current wind" },
+    "display__cc__pressure": { "type": "checkbox", "default": true, "description": "Current pressure", "tooltip": "Check to display the current pressure" },
+    "display__cc__aqi": { "type": "checkbox", "default": true, "description": "Air quality (AQI)", "tooltip": "Check to display the current local air quality index, coloured by pollution level" },
+    "display__cc__visibility": { "type": "checkbox", "default": false, "description": "Current visibility", "tooltip": "Check to display the current visibility" },
+    "display__cc__precip": { "type": "checkbox", "default": false, "description": "Current precipitation", "tooltip": "Check to display the current precipitation of the past hour" },
+    "display__cc__uv": { "type": "checkbox", "default": false, "description": "Current UV index", "tooltip": "Check to display the current ultraviolet index" },
+    "display__cc__sun": { "type": "checkbox", "default": false, "description": "Sunrise and sunset", "tooltip": "Check to display today's sunrise and sunset times" },
+    "display__hourly": { "type": "checkbox", "default": true, "description": "Hourly forecast", "tooltip": "Check to display the forecast for the next hours" },
+    "display__warning": { "type": "checkbox", "default": true, "description": "Severe weather warnings", "tooltip": "Check to display severe weather warning banners for your location" },
+    "display__forecast__maximum_temperature": { "type": "checkbox", "default": true, "description": "Forecast maximum", "tooltip": "Check to display the forecast maximum temperature" },
+    "display__forecast__minimum_temperature": { "type": "checkbox", "default": true, "description": "Forecast minimum", "tooltip": "Check to display the forecast minimum temperature" },
+    "display__forecast__wind_speed": { "type": "checkbox", "default": true, "description": "Forecast wind speed", "tooltip": "Check to display the forecast wind speed" },
+    "display__forecast__wind_direction": { "type": "checkbox", "default": true, "description": "Forecast wind direction", "tooltip": "Check to display the forecast wind direction" },
+    "display__forecast__uv": { "type": "checkbox", "default": false, "description": "Forecast UV index", "tooltip": "Check to display the forecast maximum UV index" },
+    "display__forecast__precip": { "type": "checkbox", "default": false, "description": "Forecast precipitation", "tooltip": "Check to display the forecast daytime precipitation amount" },
+    "display__meta__region": { "type": "checkbox", "default": false, "description": "Region", "tooltip": "Check to display the region (province) after the city name" },
+    "display__meta__country": { "type": "checkbox", "default": false, "description": "Country", "tooltip": "Check to display the country after the city name" },
+    "sep3": { "type": "separator" },
+    "styling": { "type": "header", "description": "Desklet style" },
+    "zoom": { "type": "spinbutton", "default": 1.0, "min": 0.5, "max": 2.0, "step": 0.1, "units": "times", "description": "Zoom by", "tooltip": "Change the size of the desklet" },
+    "layout": { "type": "combobox", "default": "0", "description": "Layout", "options": { "Horizontal": "0", "Vertical": "1" }, "tooltip": "Set the overall layout of the desklet" },
+    "iconstyle": { "type": "combobox", "default": "qweather", "description": "Icon style", "options": { "QWeather (light)": "qweather", "Colorful": "colourful", "Dark": "dark", "Light": "light", "Flat colorful": "flat_colourful", "Flat black": "flat_black", "Flat white": "flat_white", "User defined": "user" }, "tooltip": "Select the style for the weather icons" },
+    "citystyle": { "type": "checkbox", "default": false, "description": "Bold city name", "tooltip": "Check to display the city name in bold" },
+    "overrideTheme": { "type": "checkbox", "default": true, "description": "Override desktop theme (enables the settings below)", "tooltip": "Check this to override the desktop theme and configure the appearance manually" },
+    "transparency": { "type": "scale", "indent": true, "dependency": "overrideTheme", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.05, "description": "Transparency", "tooltip": "Set the transparency of the desklet" },
+    "textcolor": { "type": "colorchooser", "indent": true, "dependency": "overrideTheme", "default": "rgb(255,255,255)", "description": "Text color", "tooltip": "Click the button to select a new text color" },
+    "textshadow": { "type": "switch", "dependency": "overrideTheme", "default": false, "description": "Text shadow", "tooltip": "Check to add a text shadow" },
+    "shadowblur": { "type": "spinbutton", "dependency": "overrideTheme", "default": 1.0, "min": 1, "max": 7.0, "step": 1, "units": "px", "description": "Shadow blur radius", "tooltip": "Set the text shadow sharp (1) or blurry (2-7)" },
+    "bgcolor": { "type": "colorchooser", "indent": true, "dependency": "overrideTheme", "default": "rgb(0,0,0)", "description": "Background color", "tooltip": "Click the button to select a new background color" },
+    "cornerradius": { "type": "spinbutton", "indent": true, "dependency": "overrideTheme", "default": 12.0, "min": 0, "max": 50.0, "step": 1, "units": "px", "description": "Corner radius", "tooltip": "Radius for rounding the desklet's corners" },
+    "border": { "type": "checkbox", "indent": true, "dependency": "overrideTheme", "default": false, "description": "Show border", "tooltip": "Check this to turn border on/off" },
+    "bordercolor": { "type": "colorchooser", "default": "white", "description": "Border color", "indent": true, "dependency": "border", "tooltip": "Select the color for the border. Only available if the 'Border' checkbox is enabled" },
+    "borderwidth": { "type": "spinbutton", "default": 2, "min": 1, "max": 20, "step": 1, "units": "px", "description": "Border width", "indent": true, "dependency": "border", "tooltip": "Select the width of the border. Only available if the 'Border' checkbox is enabled" },
+    "sep4": { "type": "separator" },
+    "locationdisplay": { "type": "header", "description": "Location display settings" },
+    "manuallocation": { "type": "entry", "default": "", "description": "Manually override displayed location", "tooltip": "Set your city name manually" },
+    "sep5": { "type": "separator" },
+    "experimental": { "type": "header", "description": "Experimental and buggy features (read documentation!!)" },
+    "experimental_enabled": { "type": "checkbox", "default": false, "description": "Enable experimental features", "tooltip": "Check this to enable experimental and buggy features" },
+    "gravity": { "type": "combobox", "default": 0, "dependency": "experimental_enabled", "description": "Anchor desklet by", "options": { "Default": 0, "Top left": 8, "Left center": 7, "Bottom left": 6, "Bottom center": 5, "Bottom right": 4, "Right center": 3, "Top right": 2, "Top center": 1 }, "tooltip": "Select the point on the desklet to which it is anchored. This point will remain static as the desklet grows and shrinks" }
 }
