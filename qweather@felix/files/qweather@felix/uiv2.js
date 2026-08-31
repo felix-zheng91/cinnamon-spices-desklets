@@ -24,7 +24,9 @@ var UI_ZH = {
   'No active alerts': '无有效预警',
   'Update failed': '更新失败',
   'Weather alert': '天气预警',
-  'No data': '暂无数据'
+  'No data': '暂无数据',
+  'High': '最高',
+  'Low': '最低'
 };
 
 var UI_ZH_HANT = {
@@ -49,7 +51,9 @@ var UI_ZH_HANT = {
   'No active alerts': '無有效預警',
   'Update failed': '更新失敗',
   'Weather alert': '天氣預警',
-  'No data': '暫無資料'
+  'No data': '暫無資料',
+  'High': '最高',
+  'Low': '最低'
 };
 
 var WEEK_ZH = { Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四', Fri: '周五', Sat: '周六', Sun: '周日' };
