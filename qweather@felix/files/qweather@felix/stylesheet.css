@@ -1,7 +1,144 @@
+.qweather-root {
+  spacing: 10px;
+}
+
+.qweather-header {
+  spacing: 8px;
+}
+
+.qweather-city {
+  font-weight: 600;
+}
+
+.qweather-updated,
+.qweather-footer-meta {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.qweather-card {
+  background-color: rgba(127, 127, 127, 0.10);
+  border-radius: 12px;
+}
+
+.qweather-current-content,
+.qweather-current-summary,
+.qweather-current-text {
+  spacing: 8px;
+}
+
+.qweather-current-icon,
+.qweather-hour-icon,
+.qweather-forecast-icon {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.qweather-current-temp {
+  font-weight: 600;
+}
+
+.qweather-current-description {
+  font-weight: normal;
+}
+
+.qweather-metric-grid {
+  spacing-rows: 8px;
+  spacing-columns: 8px;
+}
+
+.qweather-metric-cell {
+  background-color: rgba(127, 127, 127, 0.08);
+  border-radius: 9px;
+}
+
+.qweather-metric-caption {
+  font-weight: normal;
+}
+
+.qweather-metric-value {
+  font-weight: 600;
+}
+
+.qweather-section-title {
+  font-weight: bold;
+}
+
+.qweather-notice {
+  border-radius: 9px;
+  padding: 0 8px;
+}
+
+.qweather-notice-muted {
+  background-color: rgba(127, 127, 127, 0.08);
+}
+
+.qweather-notice-error {
+  background-color: rgba(190, 70, 70, 0.24);
+}
+
+.qweather-notice-warning {
+  background-color: rgba(190, 70, 45, 0.86);
+}
+
+.qweather-notice-count {
+  font-weight: bold;
+}
+
+.qweather-hourly {
+  spacing: 4px;
+}
+
+.qweather-hourly-slot {
+  background-color: rgba(127, 127, 127, 0.07);
+  border-radius: 9px;
+}
+
+.qweather-hour-time {
+  font-weight: normal;
+}
+
+.qweather-hour-temp {
+  font-weight: 600;
+}
+
+.qweather-forecast-row {
+  background-color: rgba(127, 127, 127, 0.06);
+  border-radius: 8px;
+}
+
+.qweather-forecast-day,
+.qweather-forecast-temp {
+  font-weight: 600;
+}
+
+.qweather-forecast-detail {
+  font-weight: normal;
+}
+
+.qweather-footer {
+  spacing: 4px;
+}
+
 .qweather-link {
+  background-color: transparent;
+  border: 0;
+  padding: 0;
   text-decoration: underline;
 }
 
 .qweather-link:hover {
   text-decoration: none;
+}
+
+.qweather-refresh {
+  background-color: rgba(127, 127, 127, 0.10);
+  border-radius: 7px;
+  padding: 3px;
+}
+
+.qweather-refresh:hover {
+  background-color: rgba(127, 127, 127, 0.20);
 }
