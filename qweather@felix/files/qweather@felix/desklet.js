@@ -49,6 +49,7 @@ let SERVICE_STATUS_ERROR = 0;
 const QWX_HORIZONTAL_WIDTH = 760;
 const QWX_VERTICAL_WIDTH = 420;
 const QWX_ROOT_PADDING = 12;
+const QWX_THEME_FRAME_SAFETY = 4;
 const QWX_SECTION_GAP = 10;
 const QWX_INNER_GAP = 8;
 const QWX_TEXT_SIZE = 14;
@@ -307,7 +308,14 @@ MyDesklet.prototype = {
   },
 
   _contentWidth: function () {
-    return this._rootWidth() - (2 * this._scale(QWX_ROOT_PADDING));
+    let frameInset = QWX_THEME_FRAME_SAFETY;
+    if (this.overrideTheme && this.border) {
+      let configuredBorder = Number(this.borderwidth);
+      if (isFinite(configuredBorder) && configuredBorder > frameInset) {
+        frameInset = configuredBorder;
+      }
+    }
+    return this._rootWidth() - (2 * this._scale(QWX_ROOT_PADDING)) - (2 * Math.ceil(frameInset));
   },
 
   _placeholder: function (value) {
@@ -732,10 +740,12 @@ MyDesklet.prototype = {
 
     let rowWidth = contentWidth - this._scale(20);
     let rowGap = this._scale(6);
+    let rowHorizontalPadding = this._scale(6);
+    let rowInnerWidth = rowWidth - (2 * rowHorizontalPadding);
     let dayWidth = this._scale(58);
     let iconWidth = this._scale(42);
     let tempWidth = this._scale(100);
-    let detailWidth = rowWidth - dayWidth - iconWidth - tempWidth - (rowGap * 3);
+    let detailWidth = rowInnerWidth - dayWidth - iconWidth - tempWidth - (rowGap * 3);
 
     for (let f = 0; f < this.no; f++) {
       let row = new St.BoxLayout({
