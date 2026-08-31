@@ -137,6 +137,11 @@ MyDesklet.prototype = {
     return l;
   },
 
+  _wrappedLabel: function (text, width, styleClass) {
+    let l = new St.Label({ text: text || '', style_class: styleClass || '' }); l.width = Math.max(1, Math.round(width));
+    l.clutterText.set_line_wrap(true); l.clutterText.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR); return l;
+  },
+
   _iconHolder: function (boxWidth, boxHeight, styleClass) {
     let holder = new St.Button({ style_class: styleClass || '' }); holder.width = boxWidth; holder.height = boxHeight;
     let box = new St.Bin({ x_fill: false, y_fill: false, x_align: St.Align.MIDDLE, y_align: St.Align.MIDDLE });
@@ -190,7 +195,7 @@ MyDesklet.prototype = {
     this.window.style = 'padding: ' + this._scale(QWX_ROOT_PAD_TOP) + 'px ' + this._scale(QWX_ROOT_PAD_X) + 'px ' + this._scale(12) + 'px; spacing: ' + this._scale(8) + 'px;';
 
     this.alertBox = new St.BoxLayout({ vertical: true, style_class: 'qweather-alert' }); this.alertBox.width = w;
-    this.alertTitle = this._boundedLabel('', w - this._scale(20), 'qweather-alert-title', 'left'); this.alertBody = this._boundedLabel('', w - this._scale(20), 'qweather-alert-body', 'left');
+    this.alertTitle = this._boundedLabel('', w - this._scale(20), 'qweather-alert-title', 'left'); this.alertBody = this._wrappedLabel('', w - this._scale(20), 'qweather-alert-body');
     this.alertBox.add(this.alertTitle); this.alertBox.add(this.alertBody); this.alertBox.hide(); this.window.add_actor(this.alertBox);
 
     this.topBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-top' }); this.topBox.width = w;
@@ -248,11 +253,12 @@ MyDesklet.prototype = {
 
   displayCurrent: function () {
     if (!this.service || !this.service.data) return;
+    if (this.currentTime && this.bannerupdated) this.bannerupdated.label = this._ui('Updated') + ' ' + this.currentTime.toLocaleFormat('%H:%M');
     let cc = this.service.data.cc || {}; let days = this.service.data.days || []; let today = days[0] || {};
     this.currenttemp.text = this._placeholder(this._formatTemperature(cc.temperature, false) + (cc.temperature === '' ? '' : '°'));
     this.weathertext.text = this._placeholder(cc.weathertext);
     let hi = this._formatTemperature(today.maximum_temperature, false), lo = this._formatTemperature(today.minimum_temperature, false);
-    this.hilo.text = (hi !== '' || lo !== '') ? (this._ui('Today') + '  ' + (hi !== '' ? hi + '°' : QWX_PLACEHOLDER) + ' · ' + (lo !== '' ? lo + '°' : QWX_PLACEHOLDER)) : QWX_PLACEHOLDER;
+    this.hilo.text = (hi !== '' || lo !== '') ? (this._ui('High') + ' ' + (hi !== '' ? hi + '°' : QWX_PLACEHOLDER) + ' · ' + this._ui('Low') + ' ' + (lo !== '' ? lo + '°' : QWX_PLACEHOLDER)) : QWX_PLACEHOLDER;
     this.feels.text = this._ui('Feels like') + ' ' + this._placeholder(this._formatTemperature(cc.feelslike, false) + (cc.feelslike === '' ? '' : '°'));
     this._setIcon(this.cwicon, cc.icon, this._scale(QWX_CURRENT_ICON));
     let specs = this._metricSpecs();
