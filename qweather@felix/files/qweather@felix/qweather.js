@@ -10,8 +10,7 @@
  *   /geo/v2/city/lookup                  城市搜索 / 坐标反查
  *
  * Authentication: API Key in the X-QW-Api-Key request header. Requests are
- * sent to the user's dedicated API Host (console.qweather.com -> 设置),
- * falling back to api.qweather.com when it is not configured.
+ * sent to the user's dedicated API Host (console.qweather.com -> 设置).
  *
  * Data units returned by the API (v1, metric):
  *   temperature °C, wind speed m/s, pressure hPa, visibility m,
@@ -54,32 +53,75 @@ const LANG_MAP = {
   'zh_tw': 'zh-hant', 'zh_hk': 'zh-hant', 'zh_mo': 'zh-hant', 'zh_hant': 'zh-hant',
   'en': 'en', 'ja': 'ja', 'ko': 'ko', 'de': 'de', 'fr': 'fr', 'es': 'es',
   'it': 'it', 'ru': 'ru', 'pt': 'pt', 'th': 'th', 'hi': 'hi', 'id': 'id',
-  'ar': 'ar', 'tr': 'tr', 'vi': 'vi'
+  'ar': 'ar', 'tr': 'tr', 'vi': 'vi', 'bn': 'bn', 'ms': 'ms', 'nl': 'nl',
+  'el': 'el', 'la': 'la', 'sv': 'sv', 'pl': 'pl', 'cs': 'cs', 'et': 'et',
+  'fil': 'fil', 'fi': 'fi', 'he': 'he', 'is': 'is', 'nb': 'nb'
 };
+
+function _normaliseApiHost(apihost) {
+  return (apihost || '')
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+}
+
+function _validApiHost(apihost) {
+  // QWeather dedicated hosts are DNS names. Allow an optional port so local
+  // development proxies remain possible, but reject paths/query strings.
+  return /^[A-Za-z0-9.-]+(?::\d+)?$/.test(apihost || '');
+}
+
+function _jsonErrorInfo(body) {
+  let result = { legacyCode: null, detail: '' };
+  try {
+    let j = JSON.parse(body);
+    if (typeof j.code !== 'undefined' && j.code !== null) {
+      let code = parseInt(j.code, 10);
+      if (!isNaN(code)) result.legacyCode = code;
+    }
+    if (j.error) {
+      result.detail = j.error.detail || j.error.message || j.error.title || '';
+      if (result.legacyCode === null && typeof j.error.code !== 'undefined') {
+        let code = parseInt(j.error.code, 10);
+        if (!isNaN(code)) result.legacyCode = code;
+      }
+    }
+  } catch (e) { }
+  return result;
+}
+
+// During QWeather's error-code migration, legacy v1 errors may still arrive
+// as HTTP 200 with a top-level JSON "code" such as "401".
+function _effectiveStatus(status, body) {
+  if (status !== 200) return status;
+  let info = _jsonErrorInfo(body);
+  if (info.legacyCode !== null && info.legacyCode !== 200) return info.legacyCode;
+  return status;
+}
 
 // error codes -> translated messages
 function _errorText(status, body) {
-  let detail = '';
-  try {
-    let j = JSON.parse(body);
-    if (j.error && j.error.detail) detail = j.error.detail;
-  } catch (e) { }
-  switch (status) {
+  let info = _jsonErrorInfo(body);
+  let effective = _effectiveStatus(status, body);
+
+  switch (effective) {
+    case 204: return _('No data for this location');
+    case 400: return _('Invalid request. Check the location and settings');
     case 401: return _('Authentication failed. Check your API key');
     case 402: return _('Account balance or quota exhausted');
     case 403: return _('Access denied: check your API Host and subscription');
     case 404: return _('No data for this location');
     case 429: return _('Too many requests: please increase the refresh interval');
   }
-  if (detail) return detail;
-  if (status === 0 || status === undefined) return _('Network error: check your connection');
-  return 'HTTP ' + status;
+  if (info.detail) return info.detail;
+  if (effective === 0 || effective === undefined) return _('Network error: check your connection');
+  return 'HTTP ' + effective;
 }
 
 var QWeather = class QWeather {
   constructor(apikey, apihost, location) {
-    this.apikey = apikey || '';
-    this.apihost = (apihost || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    this.apikey = (apikey || '').trim();
+    this.apihost = _normaliseApiHost(apihost);
     this.location = (location || '').trim();
 
     this.minTTL = 600;          // 10 minutes, QWeather data updates every 10-20 min
@@ -96,11 +138,23 @@ var QWeather = class QWeather {
     this.loc = null;
     // cache of geo lookups keyed by the location string
     this._geoCache = new Object();
+
+    // Every refresh receives a monotonically increasing generation. Older
+    // Soup callbacks are ignored so a slow request cannot overwrite newer
+    // data. _deskletObj also lets callbacks from a replaced service instance
+    // notice that they are obsolete.
+    this._generation = 0;
+    this._deskletObj = null;
+
+    // Last successful current-conditions update. desklet.js currently updates
+    // its timestamp before starting the request; restoring this value at the
+    // beginning of a refresh keeps "Last updated" tied to successful data.
+    this._lastSuccessfulUpdate = null;
   }
 
-  setApiKey(apikey) { this.apikey = apikey || ''; }
+  setApiKey(apikey) { this.apikey = (apikey || '').trim(); }
   setApiHost(apihost) {
-    apihost = (apihost || '').replace(/^https?:\/\//, '').replace(/\/+$/, '');
+    apihost = _normaliseApiHost(apihost);
     if (apihost !== this.apihost) this._geoCache = new Object();
     this.apihost = apihost;
   }
@@ -108,20 +162,36 @@ var QWeather = class QWeather {
   setLang(lang) { this.lang = lang || 'auto'; }
   setMaxDays(days) { this.maxDays = days; }
 
-  // host used for requests (falls back to the public host)
+  // Dedicated QWeather API Host. There is intentionally no public-host
+  // fallback: api.qweather.com is being phased out from 2026.
   get host() {
-    return this.apihost.length ? this.apihost : 'api.qweather.com';
+    return this.apihost;
   }
 
-  // best QWeather lang code for the current locale
+  // best QWeather lang code for the current locale. Returning an empty string
+  // means "do not send lang", allowing QWeather to use the location's local
+  // language with its own English fallback.
   getLang() {
     if (this.lang && this.lang !== 'auto') return this.lang;
     let langlist = GLib.get_language_names();
     for (let i = 0; i < langlist.length; i++) {
       let l = langlist[i].toLowerCase();
-      if (l !== 'c' && typeof LANG_MAP[l] !== 'undefined') return LANG_MAP[l];
+      if (l === 'c') continue;
+
+      if (typeof LANG_MAP[l] !== 'undefined') return LANG_MAP[l];
+
+      // GLib may return locale variants that are not explicitly listed above.
+      // Try the base language without guessing for Chinese script variants.
+      let base = l.split(/[_.@-]/)[0];
+      if (base !== 'zh' && typeof LANG_MAP[base] !== 'undefined') return LANG_MAP[base];
     }
-    return 'zh';
+    return '';
+  }
+
+  _langQuery(prefix) {
+    let lang = this.getLang();
+    if (!lang) return '';
+    return (prefix || '&') + 'lang=' + encodeURIComponent(lang);
   }
 
   _emptyData() {
@@ -139,6 +209,19 @@ var QWeather = class QWeather {
       warning: SERVICE_STATUS_INIT,
       lasterror: false
     };
+
+    this.data.errors = {
+      meta: false,
+      cc: false,
+      forecast: false,
+      hourly: false,
+      air: false,
+      warning: false
+    };
+
+    // Response metadata attributions are collected for future UI display.
+    // The desklet already keeps the permanent "Data from QWeather" credit.
+    this.data.attributions = [];
 
     // current conditions (normalised units: C, km/h, hPa, km, mm, %)
     this.data.cc = {
@@ -178,39 +261,169 @@ var QWeather = class QWeather {
     this.data.warnings = [];
   }
 
-  // show an error in every section
-  _showError(deskletObj, message) {
-    this.data.status.meta = SERVICE_STATUS_ERROR;
-    this.data.status.cc = SERVICE_STATUS_ERROR;
-    this.data.status.forecast = SERVICE_STATUS_ERROR;
-    this.data.status.hourly = SERVICE_STATUS_ERROR;
-    this.data.status.air = SERVICE_STATUS_ERROR;
-    this.data.status.warning = SERVICE_STATUS_ERROR;
-    if (message) this.data.status.lasterror = message;
-    if (deskletObj) {
-      deskletObj.displayCurrent();
-      deskletObj.displayForecast();
-      deskletObj.displayMeta();
-      deskletObj.displayHourly();
-      deskletObj.displayWarning();
+  _markOk(section) {
+    if (typeof this.data.status[section] !== 'undefined') {
+      this.data.status[section] = SERVICE_STATUS_OK;
+    }
+    if (this.data.errors && typeof this.data.errors[section] !== 'undefined') {
+      this.data.errors[section] = false;
     }
   }
 
+  _markError(section, message) {
+    if (typeof this.data.status[section] !== 'undefined') {
+      this.data.status[section] = SERVICE_STATUS_ERROR;
+    }
+    if (this.data.errors && typeof this.data.errors[section] !== 'undefined') {
+      this.data.errors[section] = message || false;
+    }
+    if (message) this.data.status.lasterror = message;
+  }
+
+  _displayWithError(deskletObj, section, displayFunc) {
+    if (!deskletObj || deskletObj._removed) return;
+    let previous = this.data.status.lasterror;
+    if (this.data.errors && this.data.errors[section]) {
+      this.data.status.lasterror = this.data.errors[section];
+    }
+    displayFunc.call(deskletObj);
+    this.data.status.lasterror = previous;
+  }
+
+  _captureAttributions(j) {
+    let metadata = this._v(j, 'metadata') || {};
+    let attrs = this._v(metadata, 'attributions') || [];
+    for (let i = 0; i < attrs.length; i++) {
+      let a = attrs[i] || {};
+      let name = a.name || a.title || a.service || '';
+      let url = a.url || a.link || '';
+      if (!name && !url) continue;
+
+      let duplicate = false;
+      for (let n = 0; n < this.data.attributions.length; n++) {
+        let existing = this.data.attributions[n];
+        if (existing.name === name && existing.url === url) {
+          duplicate = true;
+          break;
+        }
+      }
+      if (!duplicate) this.data.attributions.push({ name: name, url: url });
+    }
+    this._updateAttributionDisplay();
+  }
+
+  _updateAttributionDisplay() {
+    let deskletObj = this._deskletObj;
+    if (!deskletObj || deskletObj._removed) return;
+
+    let labels = [];
+    for (let i = 0; i < this.data.attributions.length; i++) {
+      let a = this.data.attributions[i];
+      if (!a.name && !a.url) continue;
+      labels.push(a.name ? a.name : a.url);
+    }
+
+    // Reuse the existing footer actor so metadata attribution is visible
+    // without adding a new layout row. QWeather itself is already the main
+    // clickable footer link, so avoid duplicating that label.
+    if (deskletObj.bannerpost) {
+      let extras = labels.filter(function (name) {
+        return ('' + name).toLowerCase() !== 'qweather';
+      });
+      deskletObj.bannerpost.label = extras.length ? ' · ' + extras.join(', ') : ' ';
+    }
+
+    if (deskletObj.bannertooltip && labels.length) {
+      let details = [];
+      for (let i = 0; i < this.data.attributions.length; i++) {
+        let a = this.data.attributions[i];
+        let line = a.name || a.url || '';
+        if (a.name && a.url) line += ' — ' + a.url;
+        if (line) details.push(line);
+      }
+      deskletObj.bannertooltip.set_text(_('Data attribution') + ':\n' + details.join('\n'));
+    }
+  }
+
+  // show an error in every section
+  _showError(deskletObj, message) {
+    this._markError('meta', message);
+    this._markError('cc', message);
+    this._markError('forecast', message);
+    this._markError('hourly', message);
+    this._markError('air', message);
+    this._markError('warning', message);
+
+    if (deskletObj && !deskletObj._removed) {
+      this._displayWithError(deskletObj, 'cc', deskletObj.displayCurrent);
+      this._displayWithError(deskletObj, 'forecast', deskletObj.displayForecast);
+      this._displayWithError(deskletObj, 'meta', deskletObj.displayMeta);
+      this._displayWithError(deskletObj, 'hourly', deskletObj.displayHourly);
+      this._displayWithError(deskletObj, 'warning', deskletObj.displayWarning);
+    }
+  }
+
+  _isRequestCurrent(generation) {
+    if (generation !== this._generation) return false;
+    if (!this._deskletObj) return true;
+    if (this._deskletObj._removed) return false;
+    if (this._deskletObj.service && this._deskletObj.service !== this) return false;
+    return true;
+  }
+
+  _restoreLastUpdated(deskletObj) {
+    if (!deskletObj || !deskletObj.bannerupdated) return;
+    if (this._lastSuccessfulUpdate) {
+      let text = this._lastSuccessfulUpdate.toLocaleFormat('%c');
+      deskletObj.lastupdated = text;
+      deskletObj.bannerupdated.label = text;
+    } else {
+      deskletObj.lastupdated = '';
+      deskletObj.bannerupdated.label = '';
+    }
+  }
+
+  _markSuccessfulUpdate(deskletObj) {
+    this._lastSuccessfulUpdate = new Date();
+    if (!deskletObj || !deskletObj.bannerupdated || deskletObj._removed) return;
+    let text = this._lastSuccessfulUpdate.toLocaleFormat('%c');
+    deskletObj.currentTime = this._lastSuccessfulUpdate;
+    deskletObj.lastupdated = text;
+    deskletObj.bannerupdated.label = text;
+  }
+
   // Generic GET with the API key header. callback(ok, text, status)
-  _fetch(url, callback) {
+  _fetch(url, callback, generation) {
     let here = this;
-    let message = Soup.Message.new('GET', url);
+    let message;
+
+    try {
+      message = Soup.Message.new('GET', url);
+    } catch (e) {
+      global.logError(e);
+      if (this._isRequestCurrent(generation)) callback.call(this, false, '', 0);
+      return;
+    }
+
+    if (!message) {
+      if (this._isRequestCurrent(generation)) callback.call(this, false, '', 0);
+      return;
+    }
+
     message.request_headers.append('X-QW-Api-Key', this.apikey);
     _httpSession.timeout = 15;
     _httpSession.idle_timeout = 15;
+
     if (Soup.MAJOR_VERSION === undefined || Soup.MAJOR_VERSION === 2) {
       _httpSession.queue_message(message, function (session, message) {
+        if (!here._isRequestCurrent(generation)) return;
         let status = message.status_code;
         let body = message.response_body.data ? message.response_body.data.toString() : '';
-        here._dispatch(url, status, body, callback);
+        here._dispatch(url, status, body, callback, generation);
       });
     } else { // Soup 3
       _httpSession.send_and_read_async(message, Soup.MessagePriority.NORMAL, null, function (session, result) {
+        if (!here._isRequestCurrent(generation)) return;
         let status = message.get_status();
         let body = '';
         try {
@@ -218,25 +431,40 @@ var QWeather = class QWeather {
           if (bytes) body = ByteArray.toString(bytes.get_data());
         } catch (e) {
           global.logError(e);
+          status = status || 0;
         }
-        here._dispatch(url, status, body, callback);
+        here._dispatch(url, status, body, callback, generation);
       });
     }
   }
 
-  _dispatch(url, status, body, callback) {
-    if (status === 200) {
-      callback.call(this, true, body, status);
+  _dispatch(url, status, body, callback, generation) {
+    if (!this._isRequestCurrent(generation)) return;
+
+    let effective = _effectiveStatus(status, body);
+    if (effective === 200) {
+      callback.call(this, true, body, effective);
     } else {
-      let errmsg = _errorText(status, body);
-      global.logWarning(`qweather: Error retrieving ${url}. Status: ${status}: ${errmsg}`);
-      callback.call(this, false, body, status);
+      let errmsg = _errorText(effective, body);
+      global.logWarning(`qweather: Error retrieving ${url}. Status: ${effective}: ${errmsg}`);
+      callback.call(this, false, body, effective);
     }
   }
 
   // main entry point: resolve the location, then fetch all data.
   // the desklet's display* functions are called from the callbacks.
   refreshData(deskletObj) {
+    this._deskletObj = deskletObj || null;
+    let generation = ++this._generation;
+
+    // Start a fresh attribution set for this request generation.
+    this.data.attributions = [];
+    this._updateAttributionDisplay();
+
+    // desklet.js currently stamps the refresh attempt before calling us.
+    // Restore the last *successful* update until fresh current data arrives.
+    this._restoreLastUpdated(deskletObj);
+
     // keep the previous data while fetching the new one. Blanking the
     // sections at refresh start would make the desklet shrink and grow on
     // every update (and on transient errors); each section is replaced
@@ -245,11 +473,19 @@ var QWeather = class QWeather {
       this._showError(deskletObj, _('No API key configured'));
       return;
     }
+    if (!this.apihost.length) {
+      this._showError(deskletObj, _('No API Host configured'));
+      return;
+    }
+    if (!_validApiHost(this.apihost)) {
+      this._showError(deskletObj, _('Invalid API Host'));
+      return;
+    }
     if (!this.location.length) {
       this._showError(deskletObj, _('No location configured'));
       return;
     }
-    this._resolveLocation(deskletObj);
+    this._resolveLocation(deskletObj, generation);
   }
 
   // decide whether the location setting holds coordinates, an ID or a name
@@ -257,21 +493,21 @@ var QWeather = class QWeather {
     return /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(loc);
   }
 
-  // interpret user coordinates: accept "lon,lat" (documented, QWeather
-  // convention) as well as the common "lat,lon" order
+  // interpret user coordinates. The documented order is "lon,lat". For the
+  // one unambiguous reversed case (second value cannot be a latitude), swap
+  // the values as a convenience; otherwise preserve the documented order.
   _parseCoordinates(loc) {
     let parts = loc.split(',');
     let a = 1 * parts[0].trim();
     let b = 1 * parts[1].trim();
-    // |latitude| can never exceed 90: if the second value does, the user
-    // most likely entered latitude first
     if (Math.abs(b) > 90) { let t = a; a = b; b = t; }
     if (Math.abs(b) > 90 || Math.abs(a) > 180 || isNaN(a) || isNaN(b)) return null;
     return { lon: a.toFixed(2), lat: b.toFixed(2) };
   }
 
-  _resolveLocation(deskletObj) {
+  _resolveLocation(deskletObj, generation) {
     let here = this;
+    if (!this._isRequestCurrent(generation)) return;
 
     if (this._isCoordinates(this.location)) {
       // coordinates are usable directly; fetch the weather right away and
@@ -285,60 +521,63 @@ var QWeather = class QWeather {
       this._setMetaFromLoc();
       this._lookup(deskletObj, `${coords.lon},${coords.lat}`, function () {
         // the name lookup only updates the meta display
-      }, true);
-      this._fetchAll(deskletObj);
+      }, true, generation);
+      this._fetchAll(deskletObj, generation);
       return;
     }
 
     // city name or LocationID: we must look it up first
     this._lookup(deskletObj, this.location, function (ok) {
+      if (!here._isRequestCurrent(generation)) return;
       if (ok) {
-        here._fetchAll(deskletObj);
+        here._fetchAll(deskletObj, generation);
       } else {
         // lookup failed - show the error everywhere
-        here.data.status.meta = SERVICE_STATUS_ERROR;
-        here.data.status.cc = SERVICE_STATUS_ERROR;
-        here.data.status.forecast = SERVICE_STATUS_ERROR;
-        here.data.status.hourly = SERVICE_STATUS_ERROR;
-        here.data.status.air = SERVICE_STATUS_ERROR;
-        here.data.status.warning = SERVICE_STATUS_ERROR;
-        deskletObj.displayMeta();
-        deskletObj.displayCurrent();
-        deskletObj.displayForecast();
-        deskletObj.displayHourly();
-        deskletObj.displayWarning();
+        let err = here.data.errors.meta || here.data.status.lasterror || _('Location not found');
+        here._markError('meta', err);
+        here._markError('cc', err);
+        here._markError('forecast', err);
+        here._markError('hourly', err);
+        here._markError('air', err);
+        here._markError('warning', err);
+        here._displayWithError(deskletObj, 'meta', deskletObj.displayMeta);
+        here._displayWithError(deskletObj, 'cc', deskletObj.displayCurrent);
+        here._displayWithError(deskletObj, 'forecast', deskletObj.displayForecast);
+        here._displayWithError(deskletObj, 'hourly', deskletObj.displayHourly);
+        here._displayWithError(deskletObj, 'warning', deskletObj.displayWarning);
       }
-    });
+    }, false, generation);
   }
 
   // GeoAPI city lookup (name, LocationID or coordinates)
-  // callback(ok) is always called
-  _lookup(deskletObj, query, callback, optional) {
+  // callback(ok) is always called for the current generation
+  _lookup(deskletObj, query, callback, optional, generation) {
     let here = this;
     let cacheKey = query.toLowerCase();
 
     if (this._geoCache[cacheKey]) {
       this.loc = this._geoCache[cacheKey];
       this._setMetaFromLoc();
-      this.data.status.meta = SERVICE_STATUS_OK;
-      if (deskletObj) deskletObj.displayMeta();
+      this._markOk('meta');
+      if (deskletObj) this._displayWithError(deskletObj, 'meta', deskletObj.displayMeta);
       callback.call(this, true);
       return;
     }
 
-    let url = `https://${this.host}/geo/v2/city/lookup?location=${encodeURIComponent(query)}&lang=${this.getLang()}&number=1`;
+    let url = `https://${this.host}/geo/v2/city/lookup?location=${encodeURIComponent(query)}&number=1${this._langQuery('&')}`;
     this._fetch(url, function (ok, text, status) {
       if (!ok) {
-        if (!optional) this.data.status.lasterror = _errorText(status, text);
-        if (!optional && deskletObj) {
-          // give a hint when the public host refuses to serve the GeoAPI
-          if (status === 403) this.data.status.lasterror = _('City lookup failed: configure your dedicated API Host in settings');
+        if (!optional) {
+          let err = _errorText(status, text);
+          if (status === 403) err = _('City lookup failed: check your dedicated API Host and subscription');
+          this._markError('meta', err);
         }
         callback.call(this, false);
         return;
       }
       try {
         let json = JSON.parse(text);
+        this._captureAttributions(json);
         if (!json.location || !json.location.length) throw new Error('empty location');
         let l = json.location[0];
         let lat = 1 * l.lat;
@@ -356,17 +595,15 @@ var QWeather = class QWeather {
         here._geoCache[cacheKey] = loc;
         here.loc = loc;
         here._setMetaFromLoc();
-        here.data.status.meta = SERVICE_STATUS_OK;
-        if (deskletObj) deskletObj.displayMeta();
+        here._markOk('meta');
+        if (deskletObj) here._displayWithError(deskletObj, 'meta', deskletObj.displayMeta);
         callback.call(here, true);
       } catch (e) {
         global.logError(e);
-        if (!optional) {
-          this.data.status.lasterror = _('Location not found');
-        }
+        if (!optional) here._markError('meta', _('Location not found'));
         callback.call(here, false);
       }
-    });
+    }, generation);
   }
 
   _setMetaFromLoc() {
@@ -379,111 +616,119 @@ var QWeather = class QWeather {
   }
 
   // fetch current weather, daily and hourly forecasts, air quality and warnings
-  _fetchAll(deskletObj) {
-    if (!this.loc) return;
+  _fetchAll(deskletObj, generation) {
+    if (!this.loc || !this._isRequestCurrent(generation)) return;
     let base = `https://${this.host}`;
-    let lang = this.getLang();
+    let langQuery = this._langQuery('&');
+    let airLang = this.getLang();
+    let airLangQuery = airLang ? '?lang=' + encodeURIComponent(airLang) : '';
     let lat = this.loc.lat;
     let lon = this.loc.lon;
 
     // current conditions
-    this._fetch(`${base}/weather/v1/current/${lat}/${lon}?localTime=true&lang=${lang}`, function (ok, text, status) {
+    this._fetch(`${base}/weather/v1/current/${lat}/${lon}?localTime=true${langQuery}`, function (ok, text, status) {
       if (ok) {
         try {
-          this._parseCurrent(JSON.parse(text));
-          this.data.status.cc = SERVICE_STATUS_OK;
+          let json = JSON.parse(text);
+          this._captureAttributions(json);
+          this._parseCurrent(json);
+          this._markOk('cc');
+          this._markSuccessfulUpdate(deskletObj);
         } catch (e) {
           global.logError(e);
-          this.data.status.cc = SERVICE_STATUS_ERROR;
-          this.data.status.lasterror = _('Error parsing weather data');
+          this._markError('cc', _('Error parsing weather data'));
         }
       } else {
-        this.data.status.cc = SERVICE_STATUS_ERROR;
-        this.data.status.lasterror = _errorText(status, text);
+        this._markError('cc', _errorText(status, text));
       }
-      deskletObj.displayCurrent();
-    });
+      this._displayWithError(deskletObj, 'cc', deskletObj.displayCurrent);
+    }, generation);
 
-    // daily forecast, falling back to 3 days for limited subscriptions
+    // daily forecast. QWeather v1 accepts 1-10 days; do not blindly retry
+    // authentication/quota/access failures with a second 3-day request.
     let days = Math.max(3, Math.min(10, this.maxDays));
-    this._fetchDaily(deskletObj, base, lat, lon, lang, days);
+    this._fetchDaily(deskletObj, base, lat, lon, langQuery, days, generation);
 
     // hourly forecast
     if (this.wantHourly) {
-      this._fetch(`${base}/weather/v1/hourly/${lat}/${lon}?hours=24&localTime=true&lang=${lang}`, function (ok, text) {
+      this._fetch(`${base}/weather/v1/hourly/${lat}/${lon}?hours=24&localTime=true${langQuery}`, function (ok, text, status) {
         if (ok) {
           try {
-            this._parseHourly(JSON.parse(text));
-            this.data.status.hourly = SERVICE_STATUS_OK;
+            let json = JSON.parse(text);
+            this._captureAttributions(json);
+            this._parseHourly(json);
+            this._markOk('hourly');
           } catch (e) {
             global.logError(e);
-            this.data.status.hourly = SERVICE_STATUS_ERROR;
+            this._markError('hourly', _('Error parsing weather data'));
           }
         } else {
-          this.data.status.hourly = SERVICE_STATUS_ERROR;
+          this._markError('hourly', _errorText(status, text));
         }
-        deskletObj.displayHourly();
-      });
+        this._displayWithError(deskletObj, 'hourly', deskletObj.displayHourly);
+      }, generation);
     }
 
     // air quality
     if (this.wantAir) {
-      this._fetch(`${base}/airquality/v1/current/${lat}/${lon}?lang=${lang}`, function (ok, text) {
+      this._fetch(`${base}/airquality/v1/current/${lat}/${lon}${airLangQuery}`, function (ok, text, status) {
         if (ok) {
           try {
-            this._parseAir(JSON.parse(text));
-            this.data.status.air = SERVICE_STATUS_OK;
+            let json = JSON.parse(text);
+            this._captureAttributions(json);
+            this._parseAir(json);
+            this._markOk('air');
           } catch (e) {
             global.logError(e);
-            this.data.status.air = SERVICE_STATUS_ERROR;
+            this._markError('air', _('Error parsing weather data'));
           }
         } else {
-          this.data.status.air = SERVICE_STATUS_ERROR;
+          this._markError('air', _errorText(status, text));
         }
-        deskletObj.displayCurrent(); // the AQI line is part of the current conditions
-      });
+        let displayErrorSection = this.data.status.cc === SERVICE_STATUS_ERROR ? 'cc' : 'air';
+        this._displayWithError(deskletObj, displayErrorSection, deskletObj.displayCurrent);
+      }, generation);
     }
 
     // weather warnings
     if (this.wantWarning) {
-      this._fetch(`${base}/weatheralert/v1/current/${lat}/${lon}?localTime=true&lang=${lang}`, function (ok, text) {
+      this._fetch(`${base}/weatheralert/v1/current/${lat}/${lon}?localTime=true${langQuery}`, function (ok, text, status) {
         if (ok) {
           try {
-            this._parseWarning(JSON.parse(text));
-            this.data.status.warning = SERVICE_STATUS_OK;
+            let json = JSON.parse(text);
+            this._captureAttributions(json);
+            this._parseWarning(json);
+            this._markOk('warning');
           } catch (e) {
             global.logError(e);
-            this.data.status.warning = SERVICE_STATUS_ERROR;
+            this._markError('warning', _('Error parsing weather data'));
           }
         } else {
-          this.data.status.warning = SERVICE_STATUS_ERROR;
+          this._dropExpiredWarnings();
+          this._markError('warning', _errorText(status, text));
         }
-        deskletObj.displayWarning();
-      });
+        this._displayWithError(deskletObj, 'warning', deskletObj.displayWarning);
+      }, generation);
     }
   }
 
-  _fetchDaily(deskletObj, base, lat, lon, lang, days) {
-    let here = this;
-    this._fetch(`${base}/weather/v1/daily/${lat}/${lon}?days=${days}&localTime=true&lang=${lang}`, function (ok, text, status) {
+  _fetchDaily(deskletObj, base, lat, lon, langQuery, days, generation) {
+    this._fetch(`${base}/weather/v1/daily/${lat}/${lon}?days=${days}&localTime=true${langQuery}`, function (ok, text, status) {
       if (ok) {
         try {
-          this._parseDaily(JSON.parse(text));
-          this.data.status.forecast = SERVICE_STATUS_OK;
+          let json = JSON.parse(text);
+          this._captureAttributions(json);
+          this._parseDaily(json);
+          this._markOk('forecast');
         } catch (e) {
           global.logError(e);
-          this.data.status.forecast = SERVICE_STATUS_ERROR;
+          this._markError('forecast', _('Error parsing weather data'));
         }
-        deskletObj.displayForecast();
-      } else if (days > 3) {
-        // free subscriptions may only allow 3 days - try again
-        here._fetchDaily(deskletObj, base, lat, lon, lang, 3);
       } else {
-        this.data.status.forecast = SERVICE_STATUS_ERROR;
-        this.data.status.lasterror = _errorText(status, text);
-        deskletObj.displayForecast();
+        this._markError('forecast', _errorText(status, text));
       }
-    });
+      this._displayWithError(deskletObj, 'forecast', deskletObj.displayForecast);
+    }, generation);
   }
 
   // ---- response parsing -------------------------------------------------
@@ -566,7 +811,6 @@ var QWeather = class QWeather {
       let dtWind = this._v(daytime, 'wind') || {};
       let ntWind = this._v(night, 'wind') || {};
       let dtPrecip = this._v(daytime, 'precipitation') || {};
-      let dtWDir = this._v(dtWind, 'direction') || {};
 
       let day = new Object();
       // forecastStartTime is local time at the location
@@ -580,10 +824,28 @@ var QWeather = class QWeather {
 
       let dws = this._num(dtWind, 'speed'); // m/s
       let nws = this._num(ntWind, 'speed');
-      let ws = Math.max(dws === '' ? 0 : dws, nws === '' ? 0 : nws);
-      day.wind_speed = (dws === '' && nws === '') ? '' : (ws * 3.6).toFixed(1) * 1;
-      day.wind_scale = this._v(dtWind, 'scale');
-      day.wind_direction = this.compassPoint(this._v(dtWDir, 'compass') || '');
+      let chosenWind;
+      if (dws === '' && nws === '') {
+        chosenWind = null;
+      } else if (dws === '') {
+        chosenWind = ntWind;
+      } else if (nws === '' || dws >= nws) {
+        chosenWind = dtWind;
+      } else {
+        chosenWind = ntWind;
+      }
+
+      if (chosenWind) {
+        let ws = this._num(chosenWind, 'speed');
+        let chosenDir = this._v(chosenWind, 'direction') || {};
+        day.wind_speed = (ws === '') ? '' : (ws * 3.6).toFixed(1) * 1;
+        day.wind_scale = this._v(chosenWind, 'scale');
+        day.wind_direction = this.compassPoint(this._v(chosenDir, 'compass') || '');
+      } else {
+        day.wind_speed = '';
+        day.wind_scale = '';
+        day.wind_direction = '';
+      }
 
       day.uv = this._num(d, 'uvIndexMax');
       day.precip = this._num(dtPrecip, 'amount');
@@ -626,15 +888,23 @@ var QWeather = class QWeather {
     let indexes = this._v(j, 'indexes') || [];
     if (!indexes.length) throw new Error('no air quality indexes');
 
-    // prefer the Chinese standard, then QWeather QAQI, then the first one
+    // QWeather can return a location-specific AQI standard plus QAQI. Prefer
+    // the local standard so Japan, Europe, etc. show the index users expect;
+    // use QAQI only when no local index is present.
     let idx = null;
     for (let i = 0; i < indexes.length; i++) {
       let code = ('' + (this._v(indexes[i], 'code') || '')).toLowerCase();
-      if (code === 'cn' || code.indexOf('cn-') === 0) { idx = indexes[i]; break; }
+      if (code !== 'qaqi') {
+        idx = indexes[i];
+        break;
+      }
     }
     if (!idx) {
       for (let i = 0; i < indexes.length; i++) {
-        if (('' + (this._v(indexes[i], 'code') || '')).toLowerCase() === 'qaqi') { idx = indexes[i]; break; }
+        if (('' + (this._v(indexes[i], 'code') || '')).toLowerCase() === 'qaqi') {
+          idx = indexes[i];
+          break;
+        }
       }
     }
     if (!idx) idx = indexes[0];
@@ -655,11 +925,17 @@ var QWeather = class QWeather {
   _parseWarning(j) {
     let alerts = this._v(j, 'alerts') || [];
     this.data.warnings = [];
+    let now = Date.now();
+
     for (let i = 0; i < alerts.length; i++) {
       let a = alerts[i];
       let mt = this._v(a, 'messageType') || {};
       // cancel messages supersede previous alerts - skip them for display
       if (this._v(mt, 'code') === 'cancel') continue;
+
+      let expire = this._v(a, 'expireTime') || '';
+      let expireMs = expire ? Date.parse(expire) : NaN;
+      if (!isNaN(expireMs) && expireMs <= now) continue;
 
       let et = this._v(a, 'eventType') || {};
       let color = this._v(a, 'color') || {};
@@ -674,10 +950,20 @@ var QWeather = class QWeather {
       let instruction = this._v(a, 'instruction') || '';
       if (instruction) w.text += '\n\n' + instruction;
       w.start = this._v(a, 'effectiveTime') || this._v(a, 'onsetTime') || '';
-      w.end = this._v(a, 'expireTime') || '';
+      w.end = expire;
       w.color = (typeof color.red !== 'undefined') ? `rgba(${Math.round(color.red)},${Math.round(color.green)},${Math.round(color.blue)},${(typeof color.alpha === 'undefined') ? 1 : color.alpha})` : '';
       this.data.warnings.push(w);
     }
+  }
+
+  _dropExpiredWarnings() {
+    if (!this.data.warnings || !this.data.warnings.length) return;
+    let now = Date.now();
+    this.data.warnings = this.data.warnings.filter(function (w) {
+      if (!w.end) return true;
+      let expireMs = Date.parse(w.end);
+      return isNaN(expireMs) || expireMs > now;
+    });
   }
 
   // helpers for dates: "2024-05-31T07:00+08:00" -> weekday number (0-6)
