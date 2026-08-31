@@ -1,0 +1,7 @@
+.qweather-link {
+  text-decoration: underline;
+}
+
+.qweather-link:hover {
+  text-decoration: none;
+}

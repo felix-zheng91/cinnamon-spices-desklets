@@ -1,0 +1,709 @@
+# QWeather Weather Desklet translations
+# Copyright (C) 2026 felix
+# This file is distributed under the same license as the qweather@felix package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qweather@felix\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-19 12:00+0800\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Mon"
+msgstr ""
+
+msgid "Tue"
+msgstr ""
+
+msgid "Wed"
+msgstr ""
+
+msgid "Thu"
+msgstr ""
+
+msgid "Fri"
+msgstr ""
+
+msgid "Sat"
+msgstr ""
+
+msgid "Sun"
+msgstr ""
+
+msgid "Weather"
+msgstr ""
+
+msgid "QWeather console"
+msgstr ""
+
+msgid "Feels like:"
+msgstr ""
+
+msgid "Humidity:"
+msgstr ""
+
+msgid "Wind:"
+msgstr ""
+
+msgid "Pressure:"
+msgstr ""
+
+msgid "Air quality:"
+msgstr ""
+
+msgid "Visibility:"
+msgstr ""
+
+msgid "Precipitation:"
+msgstr ""
+
+msgid "UV index:"
+msgstr ""
+
+msgid "Sunrise:"
+msgstr ""
+
+msgid "Sunset:"
+msgstr ""
+
+msgid "Max:"
+msgstr ""
+
+msgid "Min:"
+msgstr ""
+
+msgid "Wind speed:"
+msgstr ""
+
+msgid "Dir:"
+msgstr ""
+
+msgid "UV:"
+msgstr ""
+
+msgid "Precip:"
+msgstr ""
+
+msgid "Data from "
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Last updated"
+msgstr ""
+
+msgid "Precipitation probability:"
+msgstr ""
+
+msgid "Today"
+msgstr ""
+
+msgid "No Data Available"
+msgstr ""
+
+msgid "Error: %s"
+msgstr ""
+
+msgid "No Data"
+msgstr ""
+
+msgid "Primary pollutant:"
+msgstr ""
+
+msgid "Click for the full forecast for %s"
+msgstr ""
+
+msgid "%f°F"
+msgstr ""
+
+msgid "%f°C"
+msgstr ""
+
+msgid "Force %s"
+msgstr ""
+
+msgid "%fmph"
+msgstr ""
+
+msgid "%fkn"
+msgstr ""
+
+msgid "%fkm/h"
+msgstr ""
+
+msgid "%fm/s"
+msgstr ""
+
+msgid "%fmb"
+msgstr ""
+
+msgid "%fin"
+msgstr ""
+
+msgid "%fmm"
+msgstr ""
+
+msgid "%fkPa"
+msgstr ""
+
+msgid "%fmi"
+msgstr ""
+
+msgid "%fnmi"
+msgstr ""
+
+msgid "%fkm"
+msgstr ""
+
+msgid "Authentication failed. Check your API key"
+msgstr ""
+
+msgid "Account balance or quota exhausted"
+msgstr ""
+
+msgid "Access denied: check your API Host and subscription"
+msgstr ""
+
+msgid "No data for this location"
+msgstr ""
+
+msgid "Too many requests: please increase the refresh interval"
+msgstr ""
+
+msgid "No API key configured"
+msgstr ""
+
+msgid "No location configured"
+msgstr ""
+
+msgid "Invalid coordinates"
+msgstr ""
+
+msgid "City lookup failed: configure your dedicated API Host in settings"
+msgstr ""
+
+msgid "Location not found"
+msgstr ""
+
+msgid "Error parsing weather data"
+msgstr ""
+
+msgid "N"
+msgstr ""
+
+msgid "NNE"
+msgstr ""
+
+msgid "NE"
+msgstr ""
+
+msgid "ENE"
+msgstr ""
+
+msgid "E"
+msgstr ""
+
+msgid "ESE"
+msgstr ""
+
+msgid "SE"
+msgstr ""
+
+msgid "SSE"
+msgstr ""
+
+msgid "S"
+msgstr ""
+
+msgid "SSW"
+msgstr ""
+
+msgid "SW"
+msgstr ""
+
+msgid "WSW"
+msgstr ""
+
+msgid "W"
+msgstr ""
+
+msgid "WNW"
+msgstr ""
+
+msgid "NW"
+msgstr ""
+
+msgid "NNW"
+msgstr ""
+
+msgid "Variable"
+msgstr ""
+
+msgid "Weather warning"
+msgstr ""
+
+msgid "QWeather configuration"
+msgstr ""
+
+msgid "API key"
+msgstr ""
+
+msgid "Your QWeather API key. Create a project with Web API credentials at dev.qweather.com to get one"
+msgstr ""
+
+msgid "API Host"
+msgstr ""
+
+msgid "Your dedicated API Host from the QWeather console (Settings page), e.g. abc123xyz.def.qweatherapi.com. Required for city search; other requests fall back to api.qweather.com when left empty"
+msgstr ""
+
+msgid "Location"
+msgstr ""
+
+msgid "A city name (e.g. Beijing or 上海), a QWeather Location ID (e.g. 101010100) or coordinates as longitude,latitude (e.g. 116.41,39.92)"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Language for the weather texts returned by QWeather. 'Automatic' follows your system locale"
+msgstr ""
+
+msgid "Automatic"
+msgstr ""
+
+msgid "简体中文"
+msgstr ""
+
+msgid "繁體中文"
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "日本語"
+msgstr ""
+
+msgid "한국어"
+msgstr ""
+
+msgid "Deutsch"
+msgstr ""
+
+msgid "Français"
+msgstr ""
+
+msgid "Español"
+msgstr ""
+
+msgid "Italiano"
+msgstr ""
+
+msgid "Русский"
+msgstr ""
+
+msgid "Português"
+msgstr ""
+
+msgid "ไทย"
+msgstr ""
+
+msgid "हिन्दी"
+msgstr ""
+
+msgid "Indonesia"
+msgstr ""
+
+msgid "العربية"
+msgstr ""
+
+msgid "Türkçe"
+msgstr ""
+
+msgid "Tiếng Việt"
+msgstr ""
+
+msgid "Units and updates"
+msgstr ""
+
+msgid "Temperature measurement unit"
+msgstr ""
+
+msgid "Measurement units used to display temperature"
+msgstr ""
+
+msgid "Celsius"
+msgstr ""
+
+msgid "Fahrenheit"
+msgstr ""
+
+msgid "Wind speed measurement unit"
+msgstr ""
+
+msgid "Measurement units used to display wind speed"
+msgstr ""
+
+msgid "km/h"
+msgstr ""
+
+msgid "mph"
+msgstr ""
+
+msgid "knots"
+msgstr ""
+
+msgid "m/s"
+msgstr ""
+
+msgid "Show wind as Beaufort force"
+msgstr ""
+
+msgid "Show the Beaufort wind force (e.g. Force 3) instead of the wind speed"
+msgstr ""
+
+msgid "Pressure measurement unit"
+msgstr ""
+
+msgid "Measurement units used to display atmospheric pressure"
+msgstr ""
+
+msgid "mb"
+msgstr ""
+
+msgid "in (Hg)"
+msgstr ""
+
+msgid "mm (Hg)"
+msgstr ""
+
+msgid "kPa"
+msgstr ""
+
+msgid "Show forecast for"
+msgstr ""
+
+msgid "The number of days of forecast to display. Your QWeather subscription may support fewer days than requested"
+msgstr ""
+
+msgid "days"
+msgstr ""
+
+msgid "Refresh forecast every"
+msgstr ""
+
+msgid "Period between refreshing forecasts. QWeather data is updated every 10-20 minutes"
+msgstr ""
+
+msgid "minutes"
+msgstr ""
+
+msgid "Optional items to display"
+msgstr ""
+
+msgid "Current weather and icon"
+msgstr ""
+
+msgid "Check to display the current weather and large icon"
+msgstr ""
+
+msgid "Current 'feels like'"
+msgstr ""
+
+msgid "Check to display the current apparent temperature"
+msgstr ""
+
+msgid "Current humidity"
+msgstr ""
+
+msgid "Check to display the current humidity"
+msgstr ""
+
+msgid "Current wind"
+msgstr ""
+
+msgid "Check to display the current wind"
+msgstr ""
+
+msgid "Current pressure"
+msgstr ""
+
+msgid "Check to display the current pressure"
+msgstr ""
+
+msgid "Air quality (AQI)"
+msgstr ""
+
+msgid "Check to display the current air quality index, coloured by pollution level"
+msgstr ""
+
+msgid "Current visibility"
+msgstr ""
+
+msgid "Check to display the current visibility"
+msgstr ""
+
+msgid "Current precipitation"
+msgstr ""
+
+msgid "Check to display the current precipitation of the past hour"
+msgstr ""
+
+msgid "Current UV index"
+msgstr ""
+
+msgid "Check to display the current ultraviolet index"
+msgstr ""
+
+msgid "Sunrise and sunset"
+msgstr ""
+
+msgid "Check to display today's sunrise and sunset times"
+msgstr ""
+
+msgid "Hourly forecast"
+msgstr ""
+
+msgid "Check to display the forecast for the next hours"
+msgstr ""
+
+msgid "Severe weather warnings"
+msgstr ""
+
+msgid "Check to display severe weather warning banners for your location"
+msgstr ""
+
+msgid "Forecast maximum"
+msgstr ""
+
+msgid "Check to display the forecast maximum temperature"
+msgstr ""
+
+msgid "Forecast minimum"
+msgstr ""
+
+msgid "Check to display the forecast minimum temperature"
+msgstr ""
+
+msgid "Forecast wind speed"
+msgstr ""
+
+msgid "Check to display the forecast wind speed"
+msgstr ""
+
+msgid "Forecast wind direction"
+msgstr ""
+
+msgid "Check to display the forecast wind direction"
+msgstr ""
+
+msgid "Forecast UV index"
+msgstr ""
+
+msgid "Check to display the forecast maximum UV index"
+msgstr ""
+
+msgid "Forecast precipitation"
+msgstr ""
+
+msgid "Check to display the forecast daytime precipitation amount"
+msgstr ""
+
+msgid "Region"
+msgstr ""
+
+msgid "Check to display the region (province) after the city name"
+msgstr ""
+
+msgid "Country"
+msgstr ""
+
+msgid "Check to display the country after the city name"
+msgstr ""
+
+msgid "Desklet style"
+msgstr ""
+
+msgid "Zoom by"
+msgstr ""
+
+msgid "Change the size of the desklet"
+msgstr ""
+
+msgid "times"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Set the overall layout of the desklet"
+msgstr ""
+
+msgid "Horizontal"
+msgstr ""
+
+msgid "Vertical"
+msgstr ""
+
+msgid "Icon style"
+msgstr ""
+
+msgid "Select the style for the weather icons"
+msgstr ""
+
+msgid "QWeather (light)"
+msgstr ""
+
+msgid "Colorful"
+msgstr ""
+
+msgid "Dark"
+msgstr ""
+
+msgid "Light"
+msgstr ""
+
+msgid "Flat colorful"
+msgstr ""
+
+msgid "Flat black"
+msgstr ""
+
+msgid "Flat white"
+msgstr ""
+
+msgid "User defined"
+msgstr ""
+
+msgid "Bold city name"
+msgstr ""
+
+msgid "Check to display the city name in bold"
+msgstr ""
+
+msgid "Override desktop theme (enables the settings below)"
+msgstr ""
+
+msgid "Check this to override the desktop theme and configure the appearance manually"
+msgstr ""
+
+msgid "Transparency"
+msgstr ""
+
+msgid "Set the transparency of the desklet"
+msgstr ""
+
+msgid "Text color"
+msgstr ""
+
+msgid "Click the button to select a new text color"
+msgstr ""
+
+msgid "Text shadow"
+msgstr ""
+
+msgid "Check to add a text shadow"
+msgstr ""
+
+msgid "Shadow blur radius"
+msgstr ""
+
+msgid "Set the text shadow sharp (1) or blurry (2-7)"
+msgstr ""
+
+msgid "px"
+msgstr ""
+
+msgid "Background color"
+msgstr ""
+
+msgid "Click the button to select a new background color"
+msgstr ""
+
+msgid "Corner radius"
+msgstr ""
+
+msgid "Radius for rounding the desklet's corners"
+msgstr ""
+
+msgid "Show border"
+msgstr ""
+
+msgid "Check this to turn border on/off"
+msgstr ""
+
+msgid "Border color"
+msgstr ""
+
+msgid "Select the color for the border. Only available if the 'Border' checkbox is enabled"
+msgstr ""
+
+msgid "Border width"
+msgstr ""
+
+msgid "Select the width of the border. Only available if the 'Border' checkbox is enabled"
+msgstr ""
+
+msgid "Location display settings"
+msgstr ""
+
+msgid "Manually override displayed location"
+msgstr ""
+
+msgid "Set your city name manually"
+msgstr ""
+
+msgid "Experimental and buggy features (read documentation!!)"
+msgstr ""
+
+msgid "Enable experimental features"
+msgstr ""
+
+msgid "Check this to enable experimental and buggy features"
+msgstr ""
+
+msgid "Anchor desklet by"
+msgstr ""
+
+msgid "Select the point on the desklet to which it is anchored. This point will remain static as the desklet grows and shrinks"
+msgstr ""
+
+msgid "Default"
+msgstr ""
+
+msgid "Top left"
+msgstr ""
+
+msgid "Left center"
+msgstr ""
+
+msgid "Bottom left"
+msgstr ""
+
+msgid "Bottom center"
+msgstr ""
+
+msgid "Bottom right"
+msgstr ""
+
+msgid "Right center"
+msgstr ""
+
+msgid "Top right"
+msgstr ""
+
+msgid "Top center"
+msgstr ""
+
+msgid "QWeather Weather"
+msgstr ""
+
+msgid "Display weather from the QWeather API, with hourly and daily forecasts, air quality and severe weather warnings"
+msgstr ""
+
+
+msgid "Network error: check your connection"
+msgstr ""

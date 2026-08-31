@@ -1,0 +1,9 @@
+{
+    "description": "Display weather from the QWeather API, with hourly and daily forecasts, air quality and severe weather warnings",
+    "name": "QWeather Weather",
+    "uuid": "qweather@felix",
+    "max-instances": 10,
+    "version": "1.0.0",
+    "contributors": "felix",
+    "prevent-decorations": true
+}

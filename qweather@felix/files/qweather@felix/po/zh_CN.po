@@ -1,0 +1,741 @@
+# Chinese (Simplified) translation for qweather@felix.
+# Copyright (C) 2026 felix
+# This file is distributed under the same license as the qweather@felix package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: qweather@felix\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-19 12:00+0800\n"
+"PO-Revision-Date: 2026-08-19 12:00+0800\n"
+"Last-Translator: felix\n"
+"Language-Team: \n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Mon"
+msgstr "周一"
+
+msgid "Tue"
+msgstr "周二"
+
+msgid "Wed"
+msgstr "周三"
+
+msgid "Thu"
+msgstr "周四"
+
+msgid "Fri"
+msgstr "周五"
+
+msgid "Sat"
+msgstr "周六"
+
+msgid "Sun"
+msgstr "周日"
+
+msgid "Weather"
+msgstr "天气"
+
+msgid "QWeather console"
+msgstr "和风天气控制台"
+
+msgid "Feels like:"
+msgstr "体感："
+
+msgid "Humidity:"
+msgstr "湿度："
+
+msgid "Wind:"
+msgstr "风力："
+
+msgid "Pressure:"
+msgstr "气压："
+
+msgid "Air quality:"
+msgstr "空气质量："
+
+msgid "Visibility:"
+msgstr "能见度："
+
+msgid "Precipitation:"
+msgstr "降水量："
+
+msgid "UV index:"
+msgstr "紫外线指数："
+
+msgid "Sunrise:"
+msgstr "日出："
+
+msgid "Sunset:"
+msgstr "日落："
+
+msgid "Max:"
+msgstr "最高："
+
+msgid "Min:"
+msgstr "最低："
+
+msgid "Wind speed:"
+msgstr "风速："
+
+msgid "Dir:"
+msgstr "风向："
+
+msgid "UV:"
+msgstr "紫外线："
+
+msgid "Precip:"
+msgstr "降水："
+
+msgid "Data from "
+msgstr "数据来自 "
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Last updated"
+msgstr "上次更新"
+
+msgid "Precipitation probability:"
+msgstr "降水概率："
+
+msgid "Today"
+msgstr "今天"
+
+msgid "No Data Available"
+msgstr "暂无数据"
+
+msgid "Error: %s"
+msgstr "错误：%s"
+
+msgid "No Data"
+msgstr "暂无数据"
+
+msgid "Primary pollutant:"
+msgstr "首要污染物："
+
+msgid "Click for the full forecast for %s"
+msgstr "点击查看 %s 的完整预报"
+
+msgid "%f°F"
+msgstr "%f°F"
+
+msgid "%f°C"
+msgstr "%f°C"
+
+msgid "Force %s"
+msgstr "%s级"
+
+msgid "%fmph"
+msgstr "%f英里/时"
+
+msgid "%fkn"
+msgstr "%f节"
+
+msgid "%fkm/h"
+msgstr "%fkm/h"
+
+msgid "%fm/s"
+msgstr "%f米/秒"
+
+msgid "%fmb"
+msgstr "%f百帕"
+
+msgid "%fin"
+msgstr "%f英寸"
+
+msgid "%fmm"
+msgstr "%f毫米"
+
+msgid "%fkPa"
+msgstr "%fkPa"
+
+msgid "%fmi"
+msgstr "%f英里"
+
+msgid "%fnmi"
+msgstr "%f海里"
+
+msgid "%fkm"
+msgstr "%f公里"
+
+msgid "Authentication failed. Check your API key"
+msgstr "认证失败，请检查 API Key"
+
+msgid "Account balance or quota exhausted"
+msgstr "账户余额或请求配额已用尽"
+
+msgid "Access denied: check your API Host and subscription"
+msgstr "访问被拒绝：请检查 API Host 与订阅"
+
+msgid "No data for this location"
+msgstr "该位置暂无数据"
+
+msgid "Too many requests: please increase the refresh interval"
+msgstr "请求过于频繁：请增大刷新间隔"
+
+msgid "No API key configured"
+msgstr "未配置 API Key"
+
+msgid "No location configured"
+msgstr "未配置位置"
+
+msgid "Invalid coordinates"
+msgstr "无效的坐标"
+
+msgid "City lookup failed: configure your dedicated API Host in settings"
+msgstr "城市查询失败：请在设置中填写你的专属 API Host"
+
+msgid "Location not found"
+msgstr "未找到该位置"
+
+msgid "Error parsing weather data"
+msgstr "解析天气数据出错"
+
+msgid "N"
+msgstr "北风"
+
+msgid "NNE"
+msgstr "东北偏北风"
+
+msgid "NE"
+msgstr "东北风"
+
+msgid "ENE"
+msgstr "东北偏东风"
+
+msgid "E"
+msgstr "东风"
+
+msgid "ESE"
+msgstr "东南偏东风"
+
+msgid "SE"
+msgstr "东南风"
+
+msgid "SSE"
+msgstr "东南偏南风"
+
+msgid "S"
+msgstr "南风"
+
+msgid "SSW"
+msgstr "西南偏南风"
+
+msgid "SW"
+msgstr "西南风"
+
+msgid "WSW"
+msgstr "西南偏西风"
+
+msgid "W"
+msgstr "西风"
+
+msgid "WNW"
+msgstr "西北偏西风"
+
+msgid "NW"
+msgstr "西北风"
+
+msgid "NNW"
+msgstr "西北偏北风"
+
+msgid "Variable"
+msgstr "风向多变"
+
+msgid "Weather warning"
+msgstr "气象预警"
+
+msgid "QWeather configuration"
+msgstr "和风天气配置"
+
+msgid "API key"
+msgstr "API 密钥"
+
+msgid ""
+"Your QWeather API key. Create a project with Web API credentials at dev."
+"qweather.com to get one"
+msgstr ""
+"你的和风天气 API 密钥。在 dev.qweather.com 创建一个 Web API 项目即可获取"
+
+msgid "API Host"
+msgstr "API 主机"
+
+msgid ""
+"Your dedicated API Host from the QWeather console (Settings page), e.g. "
+"abc123xyz.def.qweatherapi.com. Required for city search; other requests fall "
+"back to api.qweather.com when left empty"
+msgstr ""
+"你在和风天气控制台「设置」页获取的专属 API 主机，例如 abc123xyz.def."
+"qweatherapi.com。城市搜索必填；留空时其他请求回退到 api.qweather.com"
+
+msgid "Location"
+msgstr "位置"
+
+msgid ""
+"A city name (e.g. Beijing or 上海), a QWeather Location ID (e.g. 101010100) "
+"or coordinates as longitude,latitude (e.g. 116.41,39.92)"
+msgstr ""
+"城市名（如 Beijing 或 上海）、和风 Location ID（如 101010100）或经度,纬度坐标"
+"（如 116.41,39.92）"
+
+msgid "Language"
+msgstr "语言"
+
+msgid ""
+"Language for the weather texts returned by QWeather. 'Automatic' follows "
+"your system locale"
+msgstr "和风天气返回的天气文字语言。「自动」跟随系统语言"
+
+msgid "Automatic"
+msgstr "自动"
+
+msgid "简体中文"
+msgstr "简体中文"
+
+msgid "繁體中文"
+msgstr "繁體中文"
+
+msgid "English"
+msgstr "English"
+
+msgid "日本語"
+msgstr "日本語"
+
+msgid "한국어"
+msgstr "한국어"
+
+msgid "Deutsch"
+msgstr "Deutsch"
+
+msgid "Français"
+msgstr "Français"
+
+msgid "Español"
+msgstr "Español"
+
+msgid "Italiano"
+msgstr "Italiano"
+
+msgid "Русский"
+msgstr "Русский"
+
+msgid "Português"
+msgstr "Português"
+
+msgid "ไทย"
+msgstr "ไทย"
+
+msgid "हिन्दी"
+msgstr "हिन्दी"
+
+msgid "Indonesia"
+msgstr "Indonesia"
+
+msgid "العربية"
+msgstr "العربية"
+
+msgid "Türkçe"
+msgstr "Türkçe"
+
+msgid "Tiếng Việt"
+msgstr "Tiếng Việt"
+
+msgid "Units and updates"
+msgstr "单位与更新"
+
+msgid "Temperature measurement unit"
+msgstr "温度单位"
+
+msgid "Measurement units used to display temperature"
+msgstr "用于显示温度的单位"
+
+msgid "Celsius"
+msgstr "摄氏度"
+
+msgid "Fahrenheit"
+msgstr "华氏度"
+
+msgid "Wind speed measurement unit"
+msgstr "风速单位"
+
+msgid "Measurement units used to display wind speed"
+msgstr "用于显示风速的单位"
+
+msgid "km/h"
+msgstr "公里/时"
+
+msgid "mph"
+msgstr "英里/时"
+
+msgid "knots"
+msgstr "节"
+
+msgid "m/s"
+msgstr "米/秒"
+
+msgid "Show wind as Beaufort force"
+msgstr "以蒲福风级显示风力"
+
+msgid "Show the Beaufort wind force (e.g. Force 3) instead of the wind speed"
+msgstr "用蒲福风级（如 3 级）代替风速显示"
+
+msgid "Pressure measurement unit"
+msgstr "气压单位"
+
+msgid "Measurement units used to display atmospheric pressure"
+msgstr "用于显示气压的单位"
+
+msgid "mb"
+msgstr "百帕"
+
+msgid "in (Hg)"
+msgstr "英寸汞柱"
+
+msgid "mm (Hg)"
+msgstr "毫米汞柱"
+
+msgid "kPa"
+msgstr "千帕"
+
+msgid "Show forecast for"
+msgstr "显示未来"
+
+msgid ""
+"The number of days of forecast to display. Your QWeather subscription may "
+"support fewer days than requested"
+msgstr "要显示的预报天数。你的和风天气订阅可能不支持所选的全部天数"
+
+msgid "days"
+msgstr "天"
+
+msgid "Refresh forecast every"
+msgstr "刷新间隔"
+
+msgid ""
+"Period between refreshing forecasts. QWeather data is updated every 10-20 "
+"minutes"
+msgstr "两次刷新之间的间隔。和风天气数据每 10-20 分钟更新一次"
+
+msgid "minutes"
+msgstr "分钟"
+
+msgid "Optional items to display"
+msgstr "可选显示项"
+
+msgid "Current weather and icon"
+msgstr "当前天气与图标"
+
+msgid "Check to display the current weather and large icon"
+msgstr "勾选以显示当前天气与大幅图标"
+
+msgid "Current 'feels like'"
+msgstr "当前体感温度"
+
+msgid "Check to display the current apparent temperature"
+msgstr "勾选以显示当前体感温度"
+
+msgid "Current humidity"
+msgstr "当前湿度"
+
+msgid "Check to display the current humidity"
+msgstr "勾选以显示当前湿度"
+
+msgid "Current wind"
+msgstr "当前风力"
+
+msgid "Check to display the current wind"
+msgstr "勾选以显示当前风力"
+
+msgid "Current pressure"
+msgstr "当前气压"
+
+msgid "Check to display the current pressure"
+msgstr "勾选以显示当前气压"
+
+msgid "Air quality (AQI)"
+msgstr "空气质量（AQI）"
+
+msgid ""
+"Check to display the current air quality index, coloured by pollution level"
+msgstr "勾选以显示当前空气质量指数，并按污染等级着色"
+
+msgid "Current visibility"
+msgstr "当前能见度"
+
+msgid "Check to display the current visibility"
+msgstr "勾选以显示当前能见度"
+
+msgid "Current precipitation"
+msgstr "当前降水量"
+
+msgid "Check to display the current precipitation of the past hour"
+msgstr "勾选以显示过去一小时的降水量"
+
+msgid "Current UV index"
+msgstr "当前紫外线指数"
+
+msgid "Check to display the current ultraviolet index"
+msgstr "勾选以显示当前紫外线指数"
+
+msgid "Sunrise and sunset"
+msgstr "日出与日落"
+
+msgid "Check to display today's sunrise and sunset times"
+msgstr "勾选以显示今日的日出与日落时间"
+
+msgid "Hourly forecast"
+msgstr "逐小时预报"
+
+msgid "Check to display the forecast for the next hours"
+msgstr "勾选以显示未来几小时的预报"
+
+msgid "Severe weather warnings"
+msgstr "气象预警"
+
+msgid "Check to display severe weather warning banners for your location"
+msgstr "勾选以显示你所在地区的气象预警横幅"
+
+msgid "Forecast maximum"
+msgstr "预报最高温"
+
+msgid "Check to display the forecast maximum temperature"
+msgstr "勾选以显示预报最高温度"
+
+msgid "Forecast minimum"
+msgstr "预报最低温"
+
+msgid "Check to display the forecast minimum temperature"
+msgstr "勾选以显示预报最低温度"
+
+msgid "Forecast wind speed"
+msgstr "预报风速"
+
+msgid "Check to display the forecast wind speed"
+msgstr "勾选以显示预报风速"
+
+msgid "Forecast wind direction"
+msgstr "预报风向"
+
+msgid "Check to display the forecast wind direction"
+msgstr "勾选以显示预报风向"
+
+msgid "Forecast UV index"
+msgstr "预报紫外线指数"
+
+msgid "Check to display the forecast maximum UV index"
+msgstr "勾选以显示预报最大紫外线指数"
+
+msgid "Forecast precipitation"
+msgstr "预报降水量"
+
+msgid "Check to display the forecast daytime precipitation amount"
+msgstr "勾选以显示预报白天降水量"
+
+msgid "Region"
+msgstr "省份/州"
+
+msgid "Check to display the region (province) after the city name"
+msgstr "勾选以在城市名后显示省份/州"
+
+msgid "Country"
+msgstr "国家"
+
+msgid "Check to display the country after the city name"
+msgstr "勾选以在城市名后显示国家"
+
+msgid "Desklet style"
+msgstr "桌面小组件样式"
+
+msgid "Zoom by"
+msgstr "缩放"
+
+msgid "Change the size of the desklet"
+msgstr "调整桌面小组件的大小"
+
+msgid "times"
+msgstr "倍"
+
+msgid "Layout"
+msgstr "布局"
+
+msgid "Set the overall layout of the desklet"
+msgstr "设置桌面小组件的整体布局"
+
+msgid "Horizontal"
+msgstr "水平"
+
+msgid "Vertical"
+msgstr "竖直"
+
+msgid "Icon style"
+msgstr "图标样式"
+
+msgid "Select the style for the weather icons"
+msgstr "选择天气图标的样式"
+
+msgid "QWeather (light)"
+msgstr "和风天气（白色）"
+
+msgid "Colorful"
+msgstr "彩色"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid "Light"
+msgstr "浅色"
+
+msgid "Flat colorful"
+msgstr "扁平彩色"
+
+msgid "Flat black"
+msgstr "扁平黑色"
+
+msgid "Flat white"
+msgstr "扁平白色"
+
+msgid "User defined"
+msgstr "自定义"
+
+msgid "Bold city name"
+msgstr "粗体城市名"
+
+msgid "Check to display the city name in bold"
+msgstr "勾选以粗体显示城市名"
+
+msgid "Override desktop theme (enables the settings below)"
+msgstr "覆盖桌面主题（启用下方设置）"
+
+msgid ""
+"Check this to override the desktop theme and configure the appearance "
+"manually"
+msgstr "勾选以覆盖桌面主题并手动配置外观"
+
+msgid "Transparency"
+msgstr "透明度"
+
+msgid "Set the transparency of the desklet"
+msgstr "设置桌面小组件的透明度"
+
+msgid "Text color"
+msgstr "文字颜色"
+
+msgid "Click the button to select a new text color"
+msgstr "点击按钮选择新的文字颜色"
+
+msgid "Text shadow"
+msgstr "文字阴影"
+
+msgid "Check to add a text shadow"
+msgstr "勾选以添加文字阴影"
+
+msgid "Shadow blur radius"
+msgstr "阴影模糊半径"
+
+msgid "Set the text shadow sharp (1) or blurry (2-7)"
+msgstr "设置文字阴影为清晰 (1) 或模糊 (2-7)"
+
+msgid "px"
+msgstr "像素"
+
+msgid "Background color"
+msgstr "背景颜色"
+
+msgid "Click the button to select a new background color"
+msgstr "点击按钮选择新的背景颜色"
+
+msgid "Corner radius"
+msgstr "圆角半径"
+
+msgid "Radius for rounding the desklet's corners"
+msgstr "桌面小组件圆角的半径"
+
+msgid "Show border"
+msgstr "显示边框"
+
+msgid "Check this to turn border on/off"
+msgstr "勾选以开启/关闭边框"
+
+msgid "Border color"
+msgstr "边框颜色"
+
+msgid ""
+"Select the color for the border. Only available if the 'Border' checkbox is "
+"enabled"
+msgstr "选择边框颜色。仅在勾选「显示边框」时可用"
+
+msgid "Border width"
+msgstr "边框宽度"
+
+msgid ""
+"Select the width of the border. Only available if the 'Border' checkbox is "
+"enabled"
+msgstr "选择边框宽度。仅在勾选「显示边框」时可用"
+
+msgid "Location display settings"
+msgstr "位置显示设置"
+
+msgid "Manually override displayed location"
+msgstr "手动覆盖显示的位置"
+
+msgid "Set your city name manually"
+msgstr "手动设置要显示的城市名"
+
+msgid "Experimental and buggy features (read documentation!!)"
+msgstr "实验性功能（请阅读文档！）"
+
+msgid "Enable experimental features"
+msgstr "启用实验性功能"
+
+msgid "Check this to enable experimental and buggy features"
+msgstr "勾选以启用实验性功能"
+
+msgid "Anchor desklet by"
+msgstr "组件锚点"
+
+msgid ""
+"Select the point on the desklet to which it is anchored. This point will "
+"remain static as the desklet grows and shrinks"
+msgstr "选择桌面小组件的锚点。组件缩放时该点保持不动"
+
+msgid "Default"
+msgstr "默认"
+
+msgid "Top left"
+msgstr "左上"
+
+msgid "Left center"
+msgstr "左中"
+
+msgid "Bottom left"
+msgstr "左下"
+
+msgid "Bottom center"
+msgstr "下中"
+
+msgid "Bottom right"
+msgstr "右下"
+
+msgid "Right center"
+msgstr "右中"
+
+msgid "Top right"
+msgstr "右上"
+
+msgid "Top center"
+msgstr "上中"
+
+msgid "QWeather Weather"
+msgstr "和风天气"
+
+msgid ""
+"Display weather from the QWeather API, with hourly and daily forecasts, air "
+"quality and severe weather warnings"
+msgstr "基于和风天气 API 显示天气，包含逐小时和逐天预报、空气质量与气象预警"
+
+msgid "Network error: check your connection"
+msgstr "网络错误：请检查网络连接"

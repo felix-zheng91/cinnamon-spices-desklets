@@ -1,0 +1,35 @@
+USER DEFINED ICONS
+==================
+
+You can use your own icons with the "User defined" icon style.
+
+Create an icon file for every QWeather icon code you want to display,
+named CODE.png (or CODE.svg, CODE.jpg, CODE.gif), for example:
+
+  100.png   - sunny
+  101.png   - cloudy
+  104.png   - overcast
+  305.png   - light rain
+  400.png   - light snow
+  999.png   - unknown (used as the fallback)
+
+The complete list of icon codes is documented at
+https://icons.qweather.com/en/
+
+You may also add an iconmeta.json file to describe the set:
+
+{
+    "ext": "png",
+    "aspect": 1,
+    "adjust": 1,
+    "map": {
+        "104": "myOvercastIcon"
+    }
+}
+
+* ext - the file extension of the icons (default png)
+* aspect - width divided by height of the icons (default 1)
+* adjust - scale factor applied to the icon (default 1)
+* map - maps icon codes to file names
+
+Icons missing from this directory fall back to the built-in QWeather icon set.
