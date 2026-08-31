@@ -7,12 +7,14 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 DESKLET = ROOT / "files" / "qweather@felix" / "desklet.js"
+STYLES = ROOT / "files" / "qweather@felix" / "stylesheet.css"
 
 
 class HtmlRedesignSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source = DESKLET.read_text(encoding="utf-8")
+        cls.styles = STYLES.read_text(encoding="utf-8")
 
     def method_body(self, name: str) -> str:
         marker = f"  {name}: function ("
@@ -25,11 +27,17 @@ class HtmlRedesignSourceTests(unittest.TestCase):
 
     def test_mockup_geometry_constants_exist(self):
         self.assertIn("const QWX_BASE_WIDTH = 340;", self.source)
+        self.assertIn("const QWX_DESIGN_SCALE = 2;", self.source)
         self.assertIn("const QWX_HOURLY_COUNT = 6;", self.source)
         self.assertIn("const QWX_METRIC_COLUMNS = 3;", self.source)
         self.assertIn("const QWX_METRIC_ROWS = 2;", self.source)
-        self.assertNotIn("const QWX_HORIZONTAL_WIDTH = 760;", self.source)
-        self.assertNotIn("const QWX_VERTICAL_WIDTH = 420;", self.source)
+
+    def test_html_design_pixels_scale_to_cinnamon_pixels(self):
+        body = self.method_body("_scale")
+        self.assertIn("n * QWX_DESIGN_SCALE * z", body)
+        self.assertIn("font-size: 92px", self.styles)
+        self.assertIn("font-size: 26px", self.styles)
+        self.assertIn("font-size: 20px", self.styles)
 
     def test_layout_has_mockup_sections(self):
         for token in ("qweather-alert", "qweather-top", "qweather-current", "qweather-metrics", "qweather-hourly", "qweather-daily", "qweather-source"):
