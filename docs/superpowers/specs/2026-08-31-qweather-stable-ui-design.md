@@ -34,11 +34,31 @@ The stylesheet currently contains only minimal link styling, while most layout d
 9. No new runtime dependencies are introduced.
 10. The implementation must remain compatible with the Cinnamon/GJS APIs already used by this desklet.
 
+## Fixed Geometry Tokens
+
+All pixel values below are base values multiplied by the existing `zoom` setting and rounded to integers at runtime.
+
+- Horizontal root width: `760 px`.
+- Vertical root width: `420 px`.
+- Outer content padding: `14 px`.
+- Section gap: `10 px`.
+- Inner card padding: `10 px`.
+- Header height: `30 px`.
+- Warning strip height: `34 px`.
+- Metric cell minimum height: `42 px`.
+- Hourly slot icon height: `28 px`.
+- Hourly slot content height: `70 px`.
+- Daily forecast row height: `42 px`.
+- Footer height: `30 px`.
+- Standard corner radius for internal cards: `8 px`.
+
+The existing user-configurable outer border radius remains authoritative for the desklet root.
+
 ## Geometry
 
 ### Horizontal layout
 
-The root desklet uses a fixed width derived only from `zoom`, with a base target in the 720–780 px range. The implementation will choose one exact base width and apply `width = round(baseWidth * zoom)`.
+The root desklet has a fixed width of `round(760 * zoom)`.
 
 The content hierarchy is:
 
@@ -51,15 +71,15 @@ The content hierarchy is:
 
 ### Vertical layout
 
-The root desklet uses a fixed width derived only from `zoom`, with a base target in the 400–440 px range. It uses the same sections and slot rules as horizontal mode, but the current-weather area is stacked vertically.
+The root desklet has a fixed width of `round(420 * zoom)`. It uses the same sections and slot rules as horizontal mode, but the current-weather summary is stacked above the metric grid.
 
 ### Height
 
-Height may change only when the user explicitly changes enabled sections or configured forecast-day count. Weather data changes, failures, warning counts, and response lengths must not change height.
+Height may change only when the user explicitly changes enabled sections, current-condition metric toggles, or configured forecast-day count. Weather data changes, failures, warning counts, and response lengths must not change height.
 
 ## Text Rules
 
-A new bounded-label helper will replace the current unbounded `_createLabel()` behaviour for dynamic fields.
+A bounded-label helper replaces the current unbounded `_createLabel()` behaviour for dynamic fields.
 
 Dynamic labels must:
 
@@ -73,7 +93,7 @@ Static captions may remain unellipsized when their width is fixed by the design.
 
 The default missing/loading placeholder is `—`.
 
-Errors must never replace city names, forecast day labels, or other primary data cells with long API messages. The UI displays a short bounded status such as `Update failed`; detailed service errors remain in tooltips.
+Errors must never replace city names, forecast day labels, or other primary data cells with long API messages. The UI displays the short bounded status `Update failed`; detailed service errors remain in tooltips.
 
 ## Header
 
@@ -84,7 +104,7 @@ The header contains:
 
 Both occupy fixed allocated regions. Long city names are ellipsized. The full location is exposed through tooltip text.
 
-The update timestamp uses a compact visual presentation and may keep the existing localized value in its tooltip.
+The update timestamp uses a compact label in the fixed header region and keeps the full localized timestamp in its tooltip.
 
 ## Current Weather Card
 
@@ -117,13 +137,13 @@ The warning area is one fixed-height row whenever warning display is enabled.
 
 When warnings exist:
 
-- show the highest-priority/first active warning title;
-- show a compact count indicator when more than one warning exists;
+- display the first active warning in the service-returned order;
+- display a compact count indicator when more than one warning exists;
 - ellipsize the title;
-- use the warning colour only as a controlled accent/background;
-- expose all warning details in the tooltip.
+- use the displayed warning's colour only as a controlled accent/background;
+- expose all active warning details in the tooltip.
 
-When no warnings exist, keep the same row geometry and show a quiet `No active alerts` state or an equivalent visually muted placeholder.
+When no warnings exist, keep the same row geometry and display `No active alerts` using the muted warning style.
 
 Warning count must never create additional actors that increase height.
 
@@ -137,7 +157,7 @@ Each slot contains fixed regions for:
 - icon;
 - temperature.
 
-Missing hourly data fills the existing slot with placeholders and no icon. It never removes a slot.
+Missing hourly data fills the existing slot with `—` placeholders and no icon. It never removes a slot.
 
 Tooltips retain weather description, feels-like temperature, precipitation probability, and wind details.
 
@@ -152,26 +172,26 @@ Each row has fixed regions for:
 - day label;
 - icon;
 - high/low temperatures according to enabled settings;
-- wind according to enabled settings;
+- wind speed/direction according to enabled settings;
 - precipitation according to enabled settings;
-- optional UV/direction information where enabled.
+- UV according to enabled settings.
 
 If fewer days are returned than configured, remaining rows display placeholders. Returned-data length must never trigger a window rebuild.
 
-Forecast errors are represented by a short fixed status treatment and placeholders; no long error string is inserted into a day label.
+Forecast errors use the fixed status treatment and placeholders; no long error string is inserted into a day label.
 
 ## Footer
 
 The footer has one fixed-height row containing:
 
-- compact attribution, e.g. `Data: QWeather` or `Data: QWeather · N sources`;
+- compact attribution: `Data: QWeather` when there are no additional attribution entries, otherwise `Data: QWeather · N sources`;
 - refresh button.
 
 Full attribution metadata is exposed in the existing tooltip. Attribution length must not change desklet width.
 
 ## Styling Tokens
 
-`stylesheet.css` becomes the primary source of stable visual classes. It will define classes for:
+`stylesheet.css` becomes the primary source of stable visual classes. It defines classes for:
 
 - root/card containers;
 - header;
@@ -186,9 +206,9 @@ Full attribution metadata is exposed in the existing tooltip. Attribution length
 - daily rows;
 - footer and link hover state.
 
-Inline styles remain only where user-configurable values require runtime CSS, such as zoom-scaled dimensions, custom text/background/border colours, transparency, border radius, and AQI/warning accent colours.
+Inline styles remain only where user-configurable values require runtime CSS, such as zoom-scaled dimensions, custom text/background/border colours, transparency, border radius, text shadow, and AQI/warning accent colours.
 
-Spacing must come from shared constants/tokens rather than content-dependent natural sizes.
+Spacing comes from the fixed geometry tokens rather than content-dependent natural sizes.
 
 ## Removal of Data-Driven Sizing
 
@@ -235,7 +255,7 @@ No settings migration is required.
 
 ## Validation Criteria
 
-The implementation is considered correct only if all of the following hold during repeated refreshes:
+The implementation is correct only if all of the following hold during repeated refreshes:
 
 1. City name changes do not change root width.
 2. Weather text changes from short to long do not change width or section spacing.
@@ -248,17 +268,17 @@ The implementation is considered correct only if all of the following hold durin
 9. Warning count changing among 0, 1 and multiple warnings does not change height.
 10. Attribution metadata length changes do not change width.
 11. Hourly missing/returning data does not change slot dimensions.
-12. Repeated manual refreshes do not produce visual jumping, spacing changes, or clipped content without an ellipsis/tooltip fallback.
+12. Repeated manual refreshes do not produce visual jumping, spacing changes, or unclipped overflowing text; overlong text must use ellipsis with tooltip fallback.
 13. Horizontal and vertical layouts remain visually balanced at multiple zoom values.
 14. Existing settings continue to work without migration.
 
 ## Testing Strategy
 
-Static review will verify that refresh display methods no longer call geometry measurement or rebuild paths.
+Static review verifies that refresh display methods no longer call geometry measurement or rebuild paths.
 
-Repository-level checks will verify syntax/structure and ensure old width-pinning code is removed.
+Repository-level checks verify syntax/structure and ensure old width-pinning code is removed.
 
-Real Cinnamon validation must cover at least:
+Real Cinnamon validation covers at least:
 
 - valid Beijing/current data;
 - Tokyo/local AQI data;
