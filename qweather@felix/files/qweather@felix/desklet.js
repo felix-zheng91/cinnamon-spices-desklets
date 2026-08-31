@@ -12,6 +12,7 @@ const Tooltips = imports.ui.tooltips;
 
 const UUID = 'qweather@felix';
 const QWX_BASE_WIDTH = 340;
+const QWX_DESIGN_SCALE = 2;
 const QWX_ROOT_PAD_X = 12;
 const QWX_ROOT_PAD_TOP = 10;
 const QWX_HOURLY_COUNT = 6;
@@ -92,7 +93,7 @@ MyDesklet.prototype = {
   },
 
   _ui: function (key) { return UIV2 && UIV2.uiText ? UIV2.uiText(this.lang || 'auto', GLib.get_language_names(), key) : (_(key) || key); },
-  _scale: function (n) { let z = Number(this.zoom); if (!isFinite(z) || z <= 0) z = 1; return Math.max(1, Math.round(n * z)); },
+  _scale: function (n) { let z = Number(this.zoom); if (!isFinite(z) || z <= 0) z = 1; return Math.max(1, Math.round(n * QWX_DESIGN_SCALE * z)); },
   _rootWidth: function () { return this._scale(QWX_BASE_WIDTH); },
   _contentWidth: function () { return this._rootWidth() - this._scale(QWX_ROOT_PAD_X * 2); },
   _placeholder: function (v) { return (v === null || typeof v === 'undefined' || v === '') ? QWX_PLACEHOLDER : String(v); },
@@ -329,8 +330,8 @@ MyDesklet.prototype = {
     if (!this.window) return; this.window.width = this._rootWidth();
     if (this.overrideTheme) {
       let bg = (this.bgcolor || 'rgb(18,26,46)').replace(')', ',' + this.transparency + ')').replace('rgb', 'rgba');
-      let s = 'padding:' + this._scale(QWX_ROOT_PAD_TOP) + 'px ' + this._scale(QWX_ROOT_PAD_X) + 'px ' + this._scale(12) + 'px;background-color:' + bg + ';color:' + (this.textcolor || '#eef3ff') + ';border-radius:' + (this.cornerradius || 14) + 'px;';
-      if (this.border) s += 'border:' + (this.borderwidth || 1) + 'px solid ' + (this.bordercolor || 'rgba(255,255,255,0.14)') + ';'; this.window.style = s;
+      let s = 'padding:' + this._scale(QWX_ROOT_PAD_TOP) + 'px ' + this._scale(QWX_ROOT_PAD_X) + 'px ' + this._scale(12) + 'px;background-color:' + bg + ';color:' + (this.textcolor || '#eef3ff') + ';border-radius:' + this._scale(this.cornerradius || 14) + 'px;';
+      if (this.border) s += 'border:' + this._scale(this.borderwidth || 1) + 'px solid ' + (this.bordercolor || 'rgba(255,255,255,0.14)') + ';'; this.window.style = s;
     }
   },
   setGravity: function () { if (!this._removed && this.actor) this.actor.move_anchor_point_from_gravity(this.experimental_enabled ? this.gravity : 0); },
