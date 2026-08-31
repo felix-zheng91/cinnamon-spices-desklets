@@ -1,32 +1,3 @@
-/*
- * qweather@felix - a Cinnamon desklet displaying weather from the
- * QWeather (和风天气) API.
- *
- * Stable-geometry UI redesign:
- * weather responses update content only. Layout geometry is derived from
- * user settings (layout, zoom, enabled sections and forecast day count).
- *
- * Based on bbcwx@oak-wood.co.uk by Chris Hastie (GPLv3), itself forked
- * from accudesk@logan by loganj. Original code Copyright 2013 loganj,
- * 2014-2018 Chris Hastie, 2026 felix.
- *
- * Icons: QWeather Icons (c) QWeather, CC BY 4.0, see icons/qweather/;
- * additional icon sets from bbcwx, see icons/ subdirectories.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 const ByteArray = imports.byteArray;
 const Desklet = imports.ui.desklet;
 const GLib = imports.gi.GLib;
@@ -40,1092 +11,334 @@ const St = imports.gi.St;
 const Tooltips = imports.ui.tooltips;
 
 const UUID = 'qweather@felix';
+const QWX_BASE_WIDTH = 340;
+const QWX_ROOT_PAD_X = 12;
+const QWX_ROOT_PAD_TOP = 10;
+const QWX_HOURLY_COUNT = 6;
+const QWX_METRIC_COLUMNS = 3;
+const QWX_METRIC_ROWS = 2;
+const QWX_CURRENT_ICON = 56;
+const QWX_HOURLY_ICON = 22;
+const QWX_DAILY_ICON = 22;
+const QWX_DEFAULT_ICONSET = 'qweather';
+const QWX_PLACEHOLDER = '—';
+const QWX_WEBSITE = 'https://www.qweather.com';
+const QWX_CONSOLE = 'https://console.qweather.com';
 
 let QWeather = null;
 let UIV2 = null;
-let SERVICE_STATUS_OK = 2;
-let SERVICE_STATUS_ERROR = 0;
-
-// Stable geometry constants. Only explicit user settings may change geometry.
-const QWX_HORIZONTAL_WIDTH = 760;
-const QWX_VERTICAL_WIDTH = 420;
-const QWX_ROOT_PADDING = 12;
-const QWX_THEME_FRAME_SAFETY = 4;
-const QWX_SECTION_GAP = 10;
-const QWX_INNER_GAP = 8;
-const QWX_TEXT_SIZE = 14;
-const QWX_CC_TEXT_SIZE = 34;
-const QWX_WEATHER_TEXT_SIZE = 16;
-const QWX_LABEL_TEXT_SIZE = 10;
-const QWX_SECTION_TEXT_SIZE = 11;
-const QWX_LINK_TEXT_SIZE = 10;
-const QWX_REFRESH_ICON_SIZE = 14;
-const QWX_CC_ICON_HEIGHT = 112;
-const QWX_ICON_HEIGHT = 34;
-const QWX_HOURLY_ICON_HEIGHT = 26;
-const QWX_HOURLY_COUNT = 6;
-const QWX_METRIC_HEIGHT = 50;
-const QWX_NOTICE_HEIGHT = 32;
-const QWX_HOURLY_HEIGHT = 86;
-const QWX_FORECAST_ROW_HEIGHT = 46;
-const QWX_FOOTER_HEIGHT = 28;
-const QWX_DEFAULT_ICONSET = 'qweather';
-const QWX_WEBSITE = 'https://www.qweather.com';
-const QWX_CONSOLE = 'https://console.qweather.com';
-const QWX_PLACEHOLDER = '—';
-
-const ALIGN_CENTER = {
-  x_fill: false,
-  y_fill: false,
-  x_align: St.Align.MIDDLE,
-  y_align: St.Align.MIDDLE,
-  expand: false
-};
 
 Gettext.bindtextdomain(UUID, GLib.get_home_dir() + '/.local/share/locale');
-
-function _(str) {
-  if (str) return Gettext.dgettext(UUID, str);
-}
-
-function MyDesklet(metadata, desklet_id) {
-  this._init(metadata, desklet_id);
-}
+function _(s) { return s ? Gettext.dgettext(UUID, s) : s; }
+function MyDesklet(metadata, desklet_id) { this._init(metadata, desklet_id); }
 
 MyDesklet.prototype = {
   __proto__: Desklet.Desklet.prototype,
 
   _init: function (metadata, desklet_id) {
-    this.desklet_id = desklet_id;
-    this.metadata = metadata;
-    this._deskletDir = metadata ? metadata.path : null;
-
     Desklet.Desklet.prototype._init.call(this, metadata);
-
-    this._uuid = (metadata && metadata.uuid) ? metadata.uuid : UUID;
-    if (this._uuid === UUID && metadata && metadata.path) {
-      let registered = false;
-      try {
-        registered = !!imports.ui.deskletManager.deskletMeta[this._uuid];
-      } catch (e) { }
-      if (!registered) {
-        for (let u in imports.ui.deskletManager.deskletMeta) {
-          if (imports.ui.deskletManager.deskletMeta[u].path === metadata.path) {
-            this._uuid = u;
-            break;
-          }
-        }
-      }
-    }
-
-    if (this._deskletDir && imports.searchPath.indexOf(this._deskletDir) === -1) {
-      imports.searchPath.push(this._deskletDir);
-    }
-
+    this.metadata = metadata;
+    this.desklet_id = desklet_id;
+    this._uuid = metadata && metadata.uuid ? metadata.uuid : UUID;
+    this._deskletDir = metadata && metadata.path ? metadata.path : '';
+    if (this._deskletDir && imports.searchPath.indexOf(this._deskletDir) === -1) imports.searchPath.push(this._deskletDir);
     QWeather = imports.qweather;
     UIV2 = imports.uiv2;
-    SERVICE_STATUS_OK = QWeather.SERVICE_STATUS_OK;
-    SERVICE_STATUS_ERROR = QWeather.SERVICE_STATUS_ERROR;
-
-    this.daynames = {
-      Mon: _('Mon'), Tue: _('Tue'), Wed: _('Wed'), Thu: _('Thu'),
-      Fri: _('Fri'), Sat: _('Sat'), Sun: _('Sun')
-    };
 
     this._removed = false;
     this._timeoutId = null;
     this._structureTimerId = null;
-    this._displayTimerId = null;
     this._globalSettingsSignalId = null;
     this.lastupdated = '';
     this.currentTime = null;
-
-    this.metricValues = {};
-    this.metricCaptions = {};
-    this.metricTooltips = {};
-    this.forecastRows = [];
     this.hourlySlots = [];
+    this.dailyRows = [];
+    this.metricCells = [];
 
     try {
       this.settings = new Settings.DeskletSettings(this, this._uuid, this.desklet_id);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'apikey', 'apikey', this.changeService, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'apihost', 'apihost', this.changeService, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'location', 'location', this.changeService, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'lang', 'lang', this.changeService, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'tunits', 'tunits', this.onUnitChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'wunits', 'wunits', this.onUnitChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'windscale', 'windscale', this.onUnitChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'punits', 'punits', this.onUnitChange, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'userno', 'userno', this.redrawRefetch, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'refreshtime', 'refreshtime', this.changeRefresh, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__weather', 'display__cc__weather', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__feelslike', 'display__cc__feelslike', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__humidity', 'display__cc__humidity', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__wind_speed', 'display__cc__wind_speed', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__pressure', 'display__cc__pressure', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__visibility', 'display__cc__visibility', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__precip', 'display__cc__precip', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__aqi', 'display__cc__aqi', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__uv', 'display__cc__uv', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__cc__sun', 'display__cc__sun', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__hourly', 'display__hourly', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__warning', 'display__warning', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__maximum_temperature', 'display__forecast__maximum_temperature', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__minimum_temperature', 'display__forecast__minimum_temperature', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__wind_speed', 'display__forecast__wind_speed', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__wind_direction', 'display__forecast__wind_direction', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__uv', 'display__forecast__uv', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__forecast__precip', 'display__forecast__precip', this.displayOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__meta__region', 'display__meta__region', this.metaOptsChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'display__meta__country', 'display__meta__country', this.metaOptsChange, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'zoom', 'zoom', this.structureChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'layout', 'layout', this.structureChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'iconstyle', 'iconstyle', this.iconStyleChange, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'citystyle', 'citystyle', this.metaOptsChange, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'overrideTheme', 'overrideTheme', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.BIDIRECTIONAL, 'transparency', 'transparency', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'textcolor', 'textcolor', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'textshadow', 'textshadow', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'shadowblur', 'shadowblur', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'bgcolor', 'bgcolor', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'cornerradius', 'cornerradius', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'border', 'border', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'bordercolor', 'bordercolor', this.updateStyle, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'borderwidth', 'borderwidth', this.updateStyle, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'manuallocation', 'manuallocation', this.displayMeta, null);
-
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'experimental_enabled', 'experimental_enabled', this.setGravity, null);
-      this.settings.bindProperty(Settings.BindingDirection.ONE_WAY, 'gravity', 'gravity', this.setGravity, null);
-
-      this._globalSettingsSignalId = global.settings.connect(
-        'changed::desklet-decorations',
-        Lang.bind(this, this.updateStyle)
-      );
-
-      this.launcher = new Gio.SubprocessLauncher({
-        flags: (
-          Gio.SubprocessFlags.STDIN_PIPE |
-          Gio.SubprocessFlags.STDOUT_PIPE |
-          Gio.SubprocessFlags.STDERR_PIPE
-        )
-      });
-
-      this.setHeader(_('Weather'));
-      this._menu.addAction(_('QWeather console'), Lang.bind(this, function () {
-        this.launcher.spawnv(['xdg-open', QWX_CONSOLE]);
-      }));
-
+      this._bindSettings();
+      this.launcher = new Gio.SubprocessLauncher({ flags: Gio.SubprocessFlags.STDIN_PIPE | Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE });
+      this.setHeader(this._ui('Daily forecast'));
+      this._menu.addAction(_('QWeather console'), Lang.bind(this, function () { this.launcher.spawnv(['xdg-open', QWX_CONSOLE]); }));
+      this._globalSettingsSignalId = global.settings.connect('changed::desklet-decorations', Lang.bind(this, this.updateStyle));
       this.initForecast();
-    } catch (e) {
-      global.logError(e);
-    }
-    return true;
+    } catch (e) { global.logError(e); }
   },
 
-  _ui: function (key) {
-    if (UIV2 && UIV2.uiText) {
-      return UIV2.uiText(this.lang || 'auto', GLib.get_language_names(), key);
-    }
-    return _(key) || key;
+  _bindSettings: function () {
+    let one = Settings.BindingDirection.ONE_WAY;
+    let bi = Settings.BindingDirection.BIDIRECTIONAL;
+    let b = Lang.bind(this, function (key, prop, cb, dir) { this.settings.bindProperty(dir || one, key, prop, cb, null); });
+    b('apikey', 'apikey', this.changeService); b('apihost', 'apihost', this.changeService); b('location', 'location', this.changeService); b('lang', 'lang', this.changeService);
+    b('tunits', 'tunits', this.onUnitChange); b('wunits', 'wunits', this.onUnitChange); b('windscale', 'windscale', this.onUnitChange); b('punits', 'punits', this.onUnitChange);
+    b('userno', 'userno', this.redrawRefetch); b('refreshtime', 'refreshtime', this.changeRefresh);
+    b('display__cc__weather', 'display__cc__weather', this.displayOptsChange); b('display__cc__feelslike', 'display__cc__feelslike', this.displayOptsChange);
+    b('display__cc__humidity', 'display__cc__humidity', this.displayOptsChange); b('display__cc__wind_speed', 'display__cc__wind_speed', this.displayOptsChange);
+    b('display__cc__pressure', 'display__cc__pressure', this.displayOptsChange); b('display__cc__visibility', 'display__cc__visibility', this.displayOptsChange);
+    b('display__cc__precip', 'display__cc__precip', this.displayOptsChange); b('display__cc__aqi', 'display__cc__aqi', this.displayOptsChange);
+    b('display__cc__uv', 'display__cc__uv', this.displayOptsChange); b('display__cc__sun', 'display__cc__sun', this.displayOptsChange);
+    b('display__hourly', 'display__hourly', this.displayOptsChange); b('display__warning', 'display__warning', this.displayOptsChange);
+    b('display__forecast__maximum_temperature', 'display__forecast__maximum_temperature', this.displayOptsChange);
+    b('display__forecast__minimum_temperature', 'display__forecast__minimum_temperature', this.displayOptsChange);
+    b('display__forecast__wind_speed', 'display__forecast__wind_speed', this.displayOptsChange); b('display__forecast__wind_direction', 'display__forecast__wind_direction', this.displayOptsChange);
+    b('display__forecast__uv', 'display__forecast__uv', this.displayOptsChange); b('display__forecast__precip', 'display__forecast__precip', this.displayOptsChange);
+    b('display__meta__region', 'display__meta__region', this.displayMeta); b('display__meta__country', 'display__meta__country', this.displayMeta);
+    b('zoom', 'zoom', this.structureChange); b('layout', 'layout', this.structureChange); b('iconstyle', 'iconstyle', this.iconStyleChange); b('citystyle', 'citystyle', this.displayMeta);
+    b('overrideTheme', 'overrideTheme', this.updateStyle); b('transparency', 'transparency', this.updateStyle, bi); b('textcolor', 'textcolor', this.updateStyle);
+    b('textshadow', 'textshadow', this.updateStyle); b('shadowblur', 'shadowblur', this.updateStyle); b('bgcolor', 'bgcolor', this.updateStyle);
+    b('cornerradius', 'cornerradius', this.updateStyle); b('border', 'border', this.updateStyle); b('bordercolor', 'bordercolor', this.updateStyle); b('borderwidth', 'borderwidth', this.updateStyle);
+    b('manuallocation', 'manuallocation', this.displayMeta); b('experimental_enabled', 'experimental_enabled', this.setGravity); b('gravity', 'gravity', this.setGravity);
   },
+
+  _ui: function (key) { return UIV2 && UIV2.uiText ? UIV2.uiText(this.lang || 'auto', GLib.get_language_names(), key) : (_(key) || key); },
+  _scale: function (n) { let z = Number(this.zoom); if (!isFinite(z) || z <= 0) z = 1; return Math.max(1, Math.round(n * z)); },
+  _rootWidth: function () { return this._scale(QWX_BASE_WIDTH); },
+  _contentWidth: function () { return this._rootWidth() - this._scale(QWX_ROOT_PAD_X * 2); },
+  _placeholder: function (v) { return (v === null || typeof v === 'undefined' || v === '') ? QWX_PLACEHOLDER : String(v); },
 
   initForecast: function () {
     this.service = new QWeather.QWeather(this.apikey, this.apihost, this.location);
     this.service.setLang(this.lang);
     this._setDerivedValues();
     this._createWindow();
+    this.updateStyle();
     this.setGravity();
-    this._update_style();
-    this.displayCurrent();
-    this.displayHourly();
-    this.displayForecast();
-    this.displayWarning();
-    this.displayMeta();
+    this.displayCurrent(); this.displayHourly(); this.displayForecast(); this.displayWarning(); this.displayMeta();
     this._refreshweathers();
   },
 
-  changeService: function () {
-    if (this._removed) return;
-    this.initForecast();
-  },
-
   _setDerivedValues: function () {
-    this.vertical = this.layout;
-    let requested = parseInt(this.userno, 10);
-    if (isNaN(requested)) requested = 3;
-    this.no = Math.max(1, Math.min(10, requested));
-
+    let n = parseInt(this.userno, 10); if (isNaN(n)) n = 7; this.no = Math.max(1, Math.min(10, n));
     this.service.setMaxDays(this.no);
-    this.refreshSec = Math.max(this.refreshtime * 60, this.service.minTTL);
-    this.service.wantHourly = this.display__hourly;
-    this.service.wantAir = this.display__cc__aqi;
-    this.service.wantWarning = this.display__warning;
-    this.showweather = this.display__cc__weather;
-
+    this.refreshSec = Math.max(Number(this.refreshtime || 10) * 60, this.service.minTTL);
+    this.service.wantHourly = !!this.display__hourly;
+    this.service.wantAir = !!this.display__cc__aqi;
+    this.service.wantWarning = !!this.display__warning;
     this._initIcons();
   },
 
-  _initIcons: function () {
-    this.iconprops = this._getIconMeta(this.iconstyle);
-    this.defaulticonprops = this._getIconMeta(QWX_DEFAULT_ICONSET);
-  },
-
+  _initIcons: function () { this.iconprops = this._getIconMeta(this.iconstyle); this.defaulticonprops = this._getIconMeta(QWX_DEFAULT_ICONSET); },
   _getIconMeta: function (iconset) {
-    let iconprops = {};
-    let deficonprops = { aspect: 1, adjust: 1, ext: 'png', map: {} };
-    let file = Gio.file_new_for_path(this._deskletDir + '/icons/' + iconset + '/iconmeta.json');
+    let out = { aspect: 1, adjust: 1, ext: 'png', map: {} };
     try {
-      let raw_json = GLib.file_get_contents(file.get_path())[1];
-      iconprops = JSON.parse(ByteArray.toString(raw_json));
-    } catch (e) {
-      global.logError('Failed to parse iconmeta.json for iconset ' + iconset);
-    }
-    for (let prop in deficonprops) {
-      if (typeof iconprops[prop] === 'undefined') iconprops[prop] = deficonprops[prop];
-    }
-    return iconprops;
+      let raw = GLib.file_get_contents(this._deskletDir + '/icons/' + iconset + '/iconmeta.json')[1];
+      let parsed = JSON.parse(ByteArray.toString(raw)); for (let k in out) if (typeof parsed[k] === 'undefined') parsed[k] = out[k]; out = parsed;
+    } catch (e) { global.logError(e); }
+    return out;
   },
 
-  _scale: function (value) {
-    let zoom = 1 * this.zoom;
-    if (!isFinite(zoom) || zoom <= 0) zoom = 1;
-    return Math.max(1, Math.round(value * zoom));
+  _boundedLabel: function (text, width, styleClass, align) {
+    let l = new St.Label({ text: this._placeholder(text), style_class: styleClass || '' });
+    l.width = Math.max(1, Math.round(width));
+    l.clutterText.set_single_line_mode(true); l.clutterText.set_ellipsize(Pango.EllipsizeMode.END);
+    if (align === 'center') l.clutterText.set_line_alignment(Pango.Alignment.CENTER);
+    else if (align === 'right') l.clutterText.set_line_alignment(Pango.Alignment.RIGHT);
+    return l;
   },
 
-  _rootWidth: function () {
-    return this._scale(this.vertical == 1 ? QWX_VERTICAL_WIDTH : QWX_HORIZONTAL_WIDTH);
+  _iconHolder: function (boxWidth, boxHeight, styleClass) {
+    let holder = new St.Button({ style_class: styleClass || '' }); holder.width = boxWidth; holder.height = boxHeight;
+    let box = new St.Bin({ x_fill: false, y_fill: false, x_align: St.Align.MIDDLE, y_align: St.Align.MIDDLE });
+    box.width = boxWidth; box.height = boxHeight; holder.set_child(box); holder._qweatherBin = box; return holder;
   },
 
-  _contentWidth: function () {
-    let frameInset = QWX_THEME_FRAME_SAFETY;
-    if (this.overrideTheme && this.border) {
-      let configuredBorder = Number(this.borderwidth);
-      if (isFinite(configuredBorder) && configuredBorder > frameInset) frameInset = configuredBorder;
-    }
-    return this._rootWidth() - (2 * this._scale(QWX_ROOT_PADDING)) - (2 * Math.ceil(frameInset));
-  },
-
-  _placeholder: function (value) {
-    if (value === null || typeof value === 'undefined' || value === '') return QWX_PLACEHOLDER;
-    return String(value);
-  },
-
-  _createBoundedLabel: function (text, width, styleClass, align) {
-    let label = new St.Label({
-      text: (text === null || typeof text === 'undefined') ? '' : String(text),
-      style_class: styleClass || ''
-    });
-    label.width = Math.max(1, Math.round(width));
-    label.clutterText.set_ellipsize(Pango.EllipsizeMode.END);
-    label.clutterText.set_single_line_mode(true);
-    label._qweatherAlign = align || 'left';
-    if (align === 'center') label.clutterText.set_line_alignment(Pango.Alignment.CENTER);
-    else if (align === 'right') label.clutterText.set_line_alignment(Pango.Alignment.RIGHT);
-    else label.clutterText.set_line_alignment(Pango.Alignment.LEFT);
-    return label;
-  },
-
-  _setBoundedButtonLabel: function (button, width, align) {
-    if (!button) return;
-    button.width = Math.max(1, Math.round(width));
-    let child = button.get_child ? button.get_child() : null;
-    if (!child || !child.clutterText) return;
-    child.width = Math.max(1, Math.round(width));
-    child.clutterText.set_ellipsize(Pango.EllipsizeMode.END);
-    child.clutterText.set_single_line_mode(true);
-    child._qweatherAlign = align || 'left';
-    if (align === 'center') child.clutterText.set_line_alignment(Pango.Alignment.CENTER);
-    else if (align === 'right') child.clutterText.set_line_alignment(Pango.Alignment.RIGHT);
-    else child.clutterText.set_line_alignment(Pango.Alignment.LEFT);
-  },
-
-  _createMetricCell: function (captionText, valueVarName, width) {
-    let cell = new St.BoxLayout({ vertical: true, style_class: 'qweather-metric-cell' });
-    cell.width = width;
-    cell.height = this._scale(QWX_METRIC_HEIGHT);
-    cell.style = 'padding: ' + this._scale(6) + 'px ' + this._scale(8) + 'px;';
-
-    let caption = this._createBoundedLabel(captionText, width - this._scale(16), 'qweather-metric-caption', 'left');
-    let value = this._createBoundedLabel(QWX_PLACEHOLDER, width - this._scale(16), 'qweather-metric-value', 'left');
-
-    cell.add(caption, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    cell.add(value, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-
-    this.metricCaptions[valueVarName] = caption;
-    this.metricValues[valueVarName] = value;
-    this[valueVarName] = value;
-    this.metricTooltips[valueVarName] = new Tooltips.Tooltip(value);
-    return cell;
-  },
-
-  _metricSpecs: function () {
-    let specs = [];
-    if (this.display__cc__feelslike) specs.push([this._ui('Feels like'), 'feelslike']);
-    if (this.display__cc__humidity) specs.push([this._ui('Humidity'), 'humidity']);
-    if (this.display__cc__wind_speed) specs.push([this._ui('Wind'), 'windspeed']);
-    if (this.display__cc__pressure) specs.push([this._ui('Pressure'), 'pressure']);
-    if (this.display__cc__aqi) specs.push([this._ui('Air quality'), 'airquality']);
-    if (this.display__cc__visibility) specs.push([this._ui('Visibility'), 'visibility']);
-    if (this.display__cc__precip) specs.push([this._ui('Precipitation'), 'precip']);
-    if (this.display__cc__uv) specs.push([this._ui('UV index'), 'uv']);
-    if (this.display__cc__sun) specs.push([this._ui('Sunrise'), 'sunrise']);
-    if (this.display__cc__sun) specs.push([this._ui('Sunset'), 'sunset']);
-    return specs;
-  },
-
-  _buildMetricGrid: function (width) {
-    this.metricValues = {};
-    this.metricCaptions = {};
-    this.metricTooltips = {};
-    let specs = this._metricSpecs();
-    let grid = new St.Table({ style_class: 'qweather-metric-grid' });
-    let gap = this._scale(QWX_INNER_GAP);
-    let cellWidth = Math.floor((width - gap) / 2);
-    grid.style = 'spacing-rows: ' + gap + 'px; spacing-columns: ' + gap + 'px;';
-    for (let i = 0; i < specs.length; i++) {
-      let cell = this._createMetricCell(specs[i][0], specs[i][1], cellWidth);
-      grid.add(cell, { row: Math.floor(i / 2), col: i % 2, x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE });
-    }
-    return grid;
-  },
-
-  _createWindow: function () {
-    this._disconnectWindowSignals();
-    if (this.window) {
-      try { this.window.destroy_all_children(); } catch (e) { }
-    }
-
-    this.metricValues = {};
-    this.metricCaptions = {};
-    this.metricTooltips = {};
-    this.forecastRows = [];
-    this.hourlySlots = [];
-
-    let rootWidth = this._rootWidth();
-    let contentWidth = this._contentWidth();
-    let gap = this._scale(QWX_SECTION_GAP);
-    let innerGap = this._scale(QWX_INNER_GAP);
-
-    this.window = new St.BoxLayout({ vertical: true, style_class: 'qweather-root' });
-    this.window.width = rootWidth;
-    this.window.style = 'spacing: ' + gap + 'px; padding: ' + this._scale(QWX_ROOT_PADDING) + 'px;';
-
-    this.headerBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-header' });
-    this.headerBox.width = contentWidth;
-    this.headerBox.height = this._scale(28);
-    this.headerBox.style = 'spacing: ' + innerGap + 'px;';
-
-    let updatedWidth = this._scale(this.vertical == 1 ? 132 : 180);
-    let cityWidth = contentWidth - updatedWidth - innerGap;
-    this.cityname = this._createBoundedLabel('', cityWidth, 'qweather-city', 'left');
-    this.citytooltip = new Tooltips.Tooltip(this.cityname);
-    this.bannerupdated = new St.Button({ label: this.lastupdated || QWX_PLACEHOLDER, style_class: 'qweather-updated' });
-    this._setBoundedButtonLabel(this.bannerupdated, updatedWidth, 'right');
-    this.updatedtooltip = new Tooltips.Tooltip(this.bannerupdated, this._ui('Updated'));
-    this.headerBox.add(this.cityname, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    this.headerBox.add(this.bannerupdated, { x_fill: false, y_fill: false, x_align: St.Align.END, y_align: St.Align.MIDDLE, expand: false });
-    this.window.add_actor(this.headerBox);
-
-    this.currentCard = new St.BoxLayout({ vertical: true, style_class: 'qweather-card qweather-current-card' });
-    this.currentCard.width = contentWidth;
-    this.currentCard.style = 'spacing: ' + innerGap + 'px; padding: ' + this._scale(10) + 'px;';
-    this.currentContent = new St.BoxLayout({ vertical: (this.vertical == 1), style_class: 'qweather-current-content' });
-    this.currentContent.style = 'spacing: ' + innerGap + 'px;';
-
-    let summaryWidth = (this.vertical == 1) ? contentWidth - this._scale(20) : this._scale(230);
-    let metricsWidth = (this.vertical == 1) ? contentWidth - this._scale(20) : contentWidth - this._scale(20) - summaryWidth - innerGap;
-    this.currentSummary = new St.BoxLayout({ vertical: (this.vertical == 1), style_class: 'qweather-current-summary' });
-    this.currentSummary.width = summaryWidth;
-    this.currentSummary.style = 'spacing: ' + this._scale(6) + 'px;';
-
-    if (this.showweather) {
-      this.cwicon = new St.Button({ style_class: 'qweather-current-icon' });
-      this.cwicon.width = (this.vertical == 1) ? summaryWidth : this._scale(120);
-      this.cwicon.height = this._scale(QWX_CC_ICON_HEIGHT);
-      this.cwicontooltip = new Tooltips.Tooltip(this.cwicon);
-      this.currentSummary.add(this.cwicon, ALIGN_CENTER);
-    } else {
-      this.cwicon = null;
-      this.cwicontooltip = null;
-    }
-
-    let summaryTextWidth = (this.vertical == 1) ? summaryWidth : Math.max(this._scale(90), summaryWidth - this._scale(126));
-    this.summaryTextBox = new St.BoxLayout({ vertical: true, style_class: 'qweather-current-text' });
-    this.summaryTextBox.width = summaryTextWidth;
-    this.summaryTextBox.style = 'spacing: ' + this._scale(2) + 'px;';
-    this.currenttemp = this._createBoundedLabel(QWX_PLACEHOLDER, summaryTextWidth, 'qweather-current-temp', 'center');
-    this.weathertext = this._createBoundedLabel(QWX_PLACEHOLDER, summaryTextWidth, 'qweather-current-description', 'center');
-    this.weathertexttooltip = new Tooltips.Tooltip(this.weathertext);
-    this.summaryTextBox.add(this.currenttemp, ALIGN_CENTER);
-    if (this.showweather) this.summaryTextBox.add(this.weathertext, ALIGN_CENTER);
-    this.currentSummary.add(this.summaryTextBox, ALIGN_CENTER);
-    this.currentContent.add(this.currentSummary, ALIGN_CENTER);
-
-    this.metricGrid = this._buildMetricGrid(metricsWidth);
-    if (this._metricSpecs().length > 0) {
-      this.currentContent.add(this.metricGrid, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    }
-    this.currentCard.add_actor(this.currentContent);
-    this.window.add_actor(this.currentCard);
-
-    this.noticeButton = new St.Button({ reactive: true, track_hover: true, style_class: 'qweather-notice qweather-notice-muted' });
-    this.noticeButton.width = contentWidth;
-    this.noticeButton.height = this._scale(QWX_NOTICE_HEIGHT);
-    this.noticeBox = new St.BoxLayout({ vertical: false });
-    this.noticeBox.width = contentWidth - this._scale(16);
-    this.noticeBox.style = 'spacing: ' + innerGap + 'px;';
-    let noticeCountWidth = this._scale(40);
-    let noticeTextWidth = this.noticeBox.width - noticeCountWidth - innerGap;
-    this.noticeLabel = this._createBoundedLabel(QWX_PLACEHOLDER, noticeTextWidth, 'qweather-notice-text', 'left');
-    this.noticeCount = this._createBoundedLabel('', noticeCountWidth, 'qweather-notice-count', 'right');
-    this.noticeBox.add(this.noticeLabel, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    this.noticeBox.add(this.noticeCount, { x_fill: false, y_fill: false, x_align: St.Align.END, y_align: St.Align.MIDDLE, expand: false });
-    this.noticeButton.set_child(this.noticeBox);
-    this.noticetooltip = new Tooltips.Tooltip(this.noticeButton);
-    this.window.add_actor(this.noticeButton);
-
-    if (this.display__hourly) {
-      this.hourlySection = new St.BoxLayout({ vertical: true, style_class: 'qweather-card qweather-section' });
-      this.hourlySection.width = contentWidth;
-      this.hourlySection.style = 'spacing: ' + this._scale(6) + 'px; padding: ' + this._scale(10) + 'px;';
-      this.hourlyTitle = this._createBoundedLabel(this._ui('Hourly forecast'), contentWidth - this._scale(20), 'qweather-section-title', 'left');
-      this.hourlySection.add(this.hourlyTitle, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-      this.hourlyBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-hourly' });
-      let hourlyContentWidth = contentWidth - this._scale(20);
-      this.hourlyBox.width = hourlyContentWidth;
-      this.hourlyBox.height = this._scale(QWX_HOURLY_HEIGHT);
-      this.hourlyBox.style = 'spacing: ' + this._scale(4) + 'px;';
-      let slotGap = this._scale(4);
-      let slotWidth = Math.floor((hourlyContentWidth - slotGap * (QWX_HOURLY_COUNT - 1)) / QWX_HOURLY_COUNT);
-      for (let h = 0; h < QWX_HOURLY_COUNT; h++) {
-        let slot = new St.BoxLayout({ vertical: true, style_class: 'qweather-hourly-slot' });
-        slot.width = slotWidth;
-        slot.height = this._scale(QWX_HOURLY_HEIGHT);
-        slot.style = 'spacing: ' + this._scale(2) + 'px; padding: ' + this._scale(4) + 'px;';
-        let time = this._createBoundedLabel(QWX_PLACEHOLDER, slotWidth - this._scale(8), 'qweather-hour-time', 'center');
-        let icon = new St.Button({ style_class: 'qweather-hour-icon' });
-        icon.width = slotWidth - this._scale(8);
-        icon.height = this._scale(QWX_HOURLY_ICON_HEIGHT);
-        let temp = this._createBoundedLabel(QWX_PLACEHOLDER, slotWidth - this._scale(8), 'qweather-hour-temp', 'center');
-        slot.add(time, ALIGN_CENTER);
-        slot.add(icon, ALIGN_CENTER);
-        slot.add(temp, ALIGN_CENTER);
-        let tooltip = new Tooltips.Tooltip(icon);
-        this.hourlySlots.push({ box: slot, time: time, icon: icon, temp: temp, tooltip: tooltip });
-        this.hourlyBox.add(slot, ALIGN_CENTER);
-      }
-      this.hourlySection.add_actor(this.hourlyBox);
-      this.window.add_actor(this.hourlySection);
-    } else {
-      this.hourlySection = null;
-      this.hourlyBox = null;
-    }
-
-    this.forecastSection = new St.BoxLayout({ vertical: true, style_class: 'qweather-card qweather-section' });
-    this.forecastSection.width = contentWidth;
-    this.forecastSection.style = 'spacing: ' + this._scale(4) + 'px; padding: ' + this._scale(10) + 'px;';
-    this.forecastTitle = this._createBoundedLabel(this._ui('Daily forecast'), contentWidth - this._scale(20), 'qweather-section-title', 'left');
-    this.forecastSection.add(this.forecastTitle, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-
-    let rowWidth = contentWidth - this._scale(20);
-    let rowGap = this._scale(6);
-    let rowHorizontalPadding = this._scale(6);
-    let rowInnerWidth = rowWidth - (2 * rowHorizontalPadding);
-    let dayWidth = this._scale(58);
-    let iconWidth = this._scale(42);
-    let tempWidth = this._scale(100);
-    let detailWidth = Math.max(this._scale(80), rowInnerWidth - dayWidth - iconWidth - tempWidth - (rowGap * 3));
-
-    for (let f = 0; f < this.no; f++) {
-      let row = new St.BoxLayout({ vertical: false, style_class: 'qweather-forecast-row' });
-      row.width = rowWidth;
-      row.height = this._scale(QWX_FORECAST_ROW_HEIGHT);
-      row.style = 'spacing: ' + rowGap + 'px; padding: ' + this._scale(4) + 'px ' + this._scale(6) + 'px;';
-      let day = this._createBoundedLabel(f === 0 ? this._ui('Today') : QWX_PLACEHOLDER, dayWidth, 'qweather-forecast-day', 'left');
-      let icon = new St.Button({ style_class: 'qweather-forecast-icon' });
-      icon.width = iconWidth;
-      icon.height = this._scale(QWX_ICON_HEIGHT);
-      let temp = this._createBoundedLabel(QWX_PLACEHOLDER, tempWidth, 'qweather-forecast-temp', 'center');
-      let detail = this._createBoundedLabel(QWX_PLACEHOLDER, detailWidth, 'qweather-forecast-detail', 'right');
-      row.add(day, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-      row.add(icon, ALIGN_CENTER);
-      row.add(temp, ALIGN_CENTER);
-      row.add(detail, { x_fill: false, y_fill: false, x_align: St.Align.END, y_align: St.Align.MIDDLE, expand: false });
-      let tooltip = new Tooltips.Tooltip(icon);
-      this.forecastRows.push({ box: row, day: day, icon: icon, temp: temp, detail: detail, tooltip: tooltip });
-      this.forecastSection.add_actor(row);
-    }
-    this.window.add_actor(this.forecastSection);
-
-    this.footerBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-footer' });
-    this.footerBox.width = contentWidth;
-    this.footerBox.height = this._scale(QWX_FOOTER_HEIGHT);
-    this.footerBox.style = 'spacing: ' + this._scale(4) + 'px;';
-    let refreshWidth = this._scale(30);
-    let dataPreWidth = this._scale(64);
-    let qweatherWidth = this._scale(72);
-    let attributionWidth = Math.max(this._scale(40), contentWidth - refreshWidth - dataPreWidth - qweatherWidth - this._scale(12));
-    this.bannerpre = this._createBoundedLabel(this._ui('Data source') + ':', dataPreWidth, 'qweather-footer-meta', 'left');
-    this.banner = new St.Button({ label: 'QWeather', reactive: true, track_hover: true, style_class: 'qweather-link' });
-    this._setBoundedButtonLabel(this.banner, qweatherWidth, 'left');
-    this.bannerpost = new St.Button({ label: ' ', style_class: 'qweather-footer-meta' });
-    this._setBoundedButtonLabel(this.bannerpost, attributionWidth, 'left');
-    this.iconbutton = new St.Icon({ icon_name: 'view-refresh-symbolic', icon_type: St.IconType.SYMBOLIC });
-    this.refreshbutton = new St.Button({ style_class: 'qweather-refresh' });
-    this.refreshbutton.width = refreshWidth;
-    this.refreshbutton.height = this._scale(24);
-    this.refreshbutton.set_child(this.iconbutton);
-    this.bannertooltip = new Tooltips.Tooltip(this.banner);
-    this.refreshtooltip = new Tooltips.Tooltip(this.refreshbutton, _('Refresh'));
-    this.footerBox.add(this.bannerpre, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    this.footerBox.add(this.banner, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    this.footerBox.add(this.bannerpost, { x_fill: false, y_fill: false, x_align: St.Align.START, y_align: St.Align.MIDDLE, expand: false });
-    this.footerBox.add(this.refreshbutton, { x_fill: false, y_fill: false, x_align: St.Align.END, y_align: St.Align.MIDDLE, expand: false });
-    this.window.add_actor(this.footerBox);
-
-    this._connectWindowSignals();
-    this.setContent(this.window);
-  },
-
-  _connectWindowSignals: function () {
-    if (this.banner) this.bannersig = this.banner.connect('clicked', Lang.bind(this, function () { this.launcher.spawnv(['xdg-open', QWX_WEBSITE]); }));
-    if (this.cwicon) this.cwiconsig = this.cwicon.connect('clicked', Lang.bind(this, function () { this.launcher.spawnv(['xdg-open', QWX_WEBSITE]); }));
-    if (this.refreshbutton) this.refreshsig = this.refreshbutton.connect('clicked', Lang.bind(this, this._refreshweathers));
-  },
-
-  _disconnectWindowSignals: function () {
-    try {
-      if (this.bannersig && this.banner) this.banner.disconnect(this.bannersig);
-      if (this.cwiconsig && this.cwicon) this.cwicon.disconnect(this.cwiconsig);
-      if (this.refreshsig && this.refreshbutton) this.refreshbutton.disconnect(this.refreshsig);
-    } catch (e) { }
-    this.bannersig = null;
-    this.cwiconsig = null;
-    this.refreshsig = null;
-  },
-
-  _setLastUpdated: function () {
-    this.currentTime = new Date();
-    this.lastupdated = this.currentTime.toLocaleFormat('%c');
-    if (this.bannerupdated) {
-      this.bannerupdated.label = this.lastupdated;
-      this._setBoundedButtonLabel(this.bannerupdated, this._scale(this.vertical == 1 ? 132 : 180), 'right');
-      if (this.updatedtooltip) this.updatedtooltip.set_text(this._ui('Updated') + ': ' + this.lastupdated);
-    }
-  },
-
-  updateStyle: function () {
-    if (this._removed || !this.window) return;
-    this._setDerivedValues();
-    this._update_style();
-    this.displayCurrent(); this.displayHourly(); this.displayForecast(); this.displayWarning(); this.displayMeta();
-  },
-
-  structureChange: function () {
-    if (this._removed) return;
-    if (this._structureTimerId) Mainloop.source_remove(this._structureTimerId);
-    this._structureTimerId = Mainloop.timeout_add(120, Lang.bind(this, function () {
-      this._structureTimerId = null;
-      if (this._removed) return false;
-      this.redraw();
-      return false;
-    }));
-  },
-
-  iconStyleChange: function () {
-    if (this._removed) return;
-    this._initIcons(); this.displayCurrent(); this.displayHourly(); this.displayForecast();
-  },
-
-  onUnitChange: function () {
-    if (this._removed) return;
-    this.displayCurrent(); this.displayForecast(); this.displayHourly();
-  },
-
-  displayOptsChange: function () {
-    if (this._removed) return;
-    if (this._displayTimerId) Mainloop.source_remove(this._displayTimerId);
-    this._displayTimerId = Mainloop.timeout_add(160, Lang.bind(this, function () {
-      this._displayTimerId = null;
-      if (this._removed) return false;
-      this.redraw();
-      this._refreshweathers();
-      return false;
-    }));
-  },
-
-  metaOptsChange: function () {
-    if (this._removed) return;
-    this._setDerivedValues(); this._update_style(); this.displayMeta();
-  },
-
-  redrawRefetch: function () {
-    if (this._removed) return;
-    this.redraw(); this._refreshweathers();
-  },
-
-  redraw: function () {
-    if (this._removed) return;
-    this._setDerivedValues(); this._createWindow(); this._update_style();
-    this.displayCurrent(); this.displayHourly(); this.displayForecast(); this.displayWarning(); this.displayMeta();
-  },
-
-  _refreshweathers: function () {
-    if (this._removed || !this.service) return;
-    this._setLastUpdated();
-    this.service.refreshData(this);
-    this._doLoop();
-  },
-
-  _doLoop: function () {
-    if (this._timeoutId) { Mainloop.source_remove(this._timeoutId); this._timeoutId = null; }
-    this._timeoutId = Mainloop.timeout_add_seconds(this.refreshSec, Lang.bind(this, this._refreshweathers));
-  },
-
-  changeRefresh: function () {
-    if (this._removed) return;
-    this._setDerivedValues(); this._doLoop();
-  },
-
-  displayHourly: function () {
-    if (this._removed || !this.display__hourly || !this.hourlySlots.length) { this._updateNotice(); return; }
-    let hours = (this.service && this.service.data && this.service.data.hours) ? this.service.data.hours : [];
-    for (let h = 0; h < QWX_HOURLY_COUNT; h++) {
-      let slot = this.hourlySlots[h];
-      let hour = hours[h];
-      slot.time.text = this._placeholder(hour && hour.time ? hour.time : '');
-      slot.temp.text = this._placeholder(hour ? this._formatTemperature(hour.temperature, true) : '');
-      if (hour && hour.icon) slot.icon.set_child(this._getIconImage(hour.icon, this._scale(QWX_HOURLY_ICON_HEIGHT), slot.icon.width));
-      else slot.icon.set_child(null);
-      if (hour) {
-        let tt = (hour.weathertext || _('No Data Available')) +
-          '\n' + _('Feels like:') + ' ' + this._placeholder(this._formatTemperature(hour.feelslike, true)) +
-          '\n' + _('Precipitation probability:') + ' ' + (hour.precip_prob === '' ? QWX_PLACEHOLDER : hour.precip_prob + '%') +
-          '\n' + _('Wind:') + ' ' + this._placeholder(this._formatWind(hour));
-        slot.tooltip.set_text(tt);
-      } else slot.tooltip.set_text(_('No Data Available'));
-    }
-    this._updateNotice();
-  },
-
-  displayForecast: function () {
-    if (this._removed || !this.forecastRows.length) { this._updateNotice(); return; }
-    let days = (this.service && this.service.data && this.service.data.days) ? this.service.data.days : [];
-    for (let f = 0; f < this.no; f++) {
-      let row = this.forecastRows[f];
-      let day = days[f];
-      if (day) {
-        row.day.text = (f === 0) ? this._ui('Today') : (this.daynames[day.day] || this._placeholder(day.day));
-        if (day.icon) row.icon.set_child(this._getIconImage(day.icon, this._scale(QWX_ICON_HEIGHT), row.icon.width));
-        else row.icon.set_child(null);
-        row.temp.text = this._forecastTemperatureText(day);
-        row.detail.text = this._forecastDetailText(day);
-        let tt = day.weathertext || _('No Data Available');
-        if (day.textNight && day.textNight !== day.weathertext) tt += ' / ' + day.textNight;
-        if (day.precip_prob !== '' && typeof day.precip_prob !== 'undefined') tt += '\n' + _('Precipitation probability:') + ' ' + day.precip_prob + '%';
-        if (day.sunrise) tt += '\n' + _('Sunrise:') + ' ' + day.sunrise + '  ' + _('Sunset:') + ' ' + (day.sunset || QWX_PLACEHOLDER);
-        row.tooltip.set_text(tt);
-      } else {
-        row.day.text = (f === 0) ? this._ui('Today') : QWX_PLACEHOLDER;
-        row.icon.set_child(null);
-        row.temp.text = QWX_PLACEHOLDER;
-        row.detail.text = QWX_PLACEHOLDER;
-        row.tooltip.set_text(_('No Data Available'));
-      }
-    }
-    let today = days.length ? days[0] : null;
-    this._setMetric('sunrise', today && today.sunrise ? today.sunrise : '');
-    this._setMetric('sunset', today && today.sunset ? today.sunset : '');
-    this._updateNotice();
-  },
-
-  _forecastTemperatureText: function (day) {
-    let showMax = this.display__forecast__maximum_temperature;
-    let showMin = this.display__forecast__minimum_temperature;
-    if (!showMax && !showMin) return '';
-    let max = showMax ? this._placeholder(this._formatTemperature(day.maximum_temperature, true)) : '';
-    let min = showMin ? this._placeholder(this._formatTemperature(day.minimum_temperature, true)) : '';
-    if (showMax && showMin) return max + ' / ' + min;
-    if (showMax) return '↑ ' + max;
-    return '↓ ' + min;
-  },
-
-  _forecastDetailText: function (day) {
-    let parts = [];
-    let hasAny = this.display__forecast__wind_speed || this.display__forecast__wind_direction || this.display__forecast__uv || this.display__forecast__precip;
-    if (!hasAny) return '';
-    if (this.display__forecast__wind_speed || this.display__forecast__wind_direction) {
-      let windParts = [];
-      if (this.display__forecast__wind_direction && day.wind_direction) windParts.push(day.wind_direction);
-      if (this.display__forecast__wind_speed) {
-        let wind = this._formatWindValue(day.wind_speed, day.wind_scale, true);
-        if (wind) windParts.push(wind);
-      }
-      parts.push(windParts.length ? windParts.join(' ') : QWX_PLACEHOLDER);
-    }
-    if (this.display__forecast__uv) {
-      let uv = (day.uv === '' || day.uv === null || typeof day.uv === 'undefined') ? QWX_PLACEHOLDER : String(Math.round(day.uv));
-      parts.push(_('UV') + ' ' + uv);
-    }
-    if (this.display__forecast__precip) parts.push(this._formatPrecip(day.precip) || QWX_PLACEHOLDER);
-    return parts.join(' · ');
-  },
-
-  displayCurrent: function () {
-    if (this._removed || !this.service || !this.service.data) return;
-    let cc = this.service.data.cc || {};
-    let air = this.service.data.air || {};
-    if (this.cwicon) {
-      if (cc.icon) this.cwicon.set_child(this._getIconImage(cc.icon, this._scale(QWX_CC_ICON_HEIGHT), this.cwicon.width));
-      else this.cwicon.set_child(null);
-    }
-    this.currenttemp.text = this._placeholder(this._formatTemperature(cc.temperature, true));
-    if (this.weathertext) {
-      this.weathertext.text = this._placeholder(cc.weathertext);
-      this.weathertexttooltip.set_text(cc.weathertext || _('No Data Available'));
-    }
-    this._setMetric('feelslike', this._formatTemperature(cc.feelslike, true));
-    this._setMetric('humidity', this._formatHumidity(cc.humidity));
-    this._setMetric('windspeed', this._formatWind(cc));
-    this._setMetric('pressure', this._formatPressure(cc.pressure, true));
-    this._setMetric('visibility', this._formatVisibility(cc.visibility, true));
-    this._setMetric('precip', this._formatPrecip(cc.precip));
-    let uv = (cc.uv === '' || cc.uv === null || typeof cc.uv === 'undefined') ? '' : String(Math.round(cc.uv));
-    this._setMetric('uv', uv);
-    let today = this.service.data.days && this.service.data.days.length ? this.service.data.days[0] : null;
-    this._setMetric('sunrise', today && today.sunrise ? today.sunrise : '');
-    this._setMetric('sunset', today && today.sunset ? today.sunset : '');
-    if (this.airquality) {
-      let airText = '';
-      if (air.display !== '' && typeof air.display !== 'undefined') {
-        airText = String(air.display);
-        if (air.category) airText += ' ' + air.category;
-      }
-      this._setMetric('airquality', airText);
-      let airColor = air.color ? air.color : this.textcolor;
-      this.airquality.style = 'font-size: ' + this._scale(QWX_TEXT_SIZE) + 'px;font-weight: bold;' + (airColor ? 'color: ' + airColor + ';' : '');
-      if (this.airqualitytooltip) {
-        let tt = airText || _('No Data Available');
-        if (air.primary && air.primary !== 'NA' && air.primary !== '-') tt += '\n' + _('Primary pollutant:') + ' ' + air.primary;
-        this.airqualitytooltip.set_text(tt);
-      }
-    }
-    this._updateNotice();
-  },
-
-  _setMetric: function (name, value) {
-    let actor = this.metricValues[name];
-    if (!actor) return;
-    let text = this._placeholder(value);
-    actor.text = text;
-    if (this.metricTooltips[name]) this.metricTooltips[name].set_text(text);
-  },
-
-  displayWarning: function () { if (!this._removed) this._updateNotice(); },
-
-  _activeErrors: function () {
-    if (!this.service || !this.service.data || !this.service.data.errors) return [];
-    let errors = this.service.data.errors;
-    let entries = [];
-    let add = function (enabled, key, label) { if (enabled && errors[key]) entries.push([label, errors[key]]); };
-    add(true, 'meta', _('Location'));
-    add(true, 'cc', _('Current weather'));
-    add(true, 'forecast', this._ui('Daily forecast'));
-    add(this.display__hourly, 'hourly', this._ui('Hourly forecast'));
-    add(this.display__cc__aqi, 'air', this._ui('Air quality'));
-    add(this.display__warning, 'warning', _('Weather alerts'));
-    return entries;
-  },
-
-  _warningTooltipText: function (warnings) {
-    let lines = [];
-    for (let i = 0; i < warnings.length; i++) {
-      let w = warnings[i] || {};
-      let line = w.title || _('Weather alert');
-      if (w.sender) line += '\n' + w.sender;
-      if (w.start) line += '\n' + w.start + (w.end ? ' ~ ' + w.end : '');
-      if (w.text) line += '\n\n' + w.text;
-      lines.push(line);
-    }
-    return lines.join('\n\n——\n\n');
-  },
-
-  _updateNotice: function () {
-    if (!this.noticeButton || !this.noticeLabel || !this.noticeCount) return;
-    let errors = this._activeErrors();
-    if (errors.length) {
-      this.noticeButton.set_style_class_name('qweather-notice qweather-notice-error');
-      this.noticeButton.style = '';
-      this.noticeLabel.text = _('Update failed');
-      this.noticeCount.text = errors.length > 1 ? String(errors.length) : '';
-      let details = [];
-      for (let i = 0; i < errors.length; i++) details.push(errors[i][0] + ': ' + errors[i][1]);
-      this.noticetooltip.set_text(details.join('\n'));
-      return;
-    }
-    let warnings = (this.service && this.service.data && this.service.data.warnings) ? this.service.data.warnings : [];
-    if (this.display__warning && warnings.length) {
-      let w = warnings[0] || {};
-      this.noticeButton.set_style_class_name('qweather-notice qweather-notice-warning');
-      this.noticeButton.style = 'background-color: ' + (w.color || 'rgba(190, 70, 45, 0.86)') + ';color: #ffffff;';
-      this.noticeLabel.text = w.title || _('Weather alert');
-      this.noticeCount.text = warnings.length > 1 ? String(warnings.length) : '';
-      this.noticetooltip.set_text(this._warningTooltipText(warnings));
-      return;
-    }
-    this.noticeButton.set_style_class_name('qweather-notice qweather-notice-muted');
-    this.noticeButton.style = '';
-    this.noticeLabel.text = this.display__warning ? _('No active alerts') : QWX_PLACEHOLDER;
-    this.noticeCount.text = '';
-    this.noticetooltip.set_text(this.display__warning ? _('No active alerts') : _('Weather status'));
-  },
-
-  displayMeta: function () {
-    if (this._removed || !this.cityname || !this.service) return;
-    this.displaycity = '';
-    this.tooltiplocation = '';
-    if (this.manuallocation && this.manuallocation.toString().length) {
-      this.displaycity = this.manuallocation.toString();
-      this.tooltiplocation = this.displaycity;
-    } else if (this.service.data.city && this.service.data.city.toString().length) {
-      this.displaycity = this.service.data.city.toString();
-      this.tooltiplocation = this.displaycity;
-      if (this.display__meta__region && this.service.data.region) this.displaycity += ', ' + this.service.data.region;
-      if (this.display__meta__country && this.service.data.country) this.displaycity += ', ' + this.service.data.country;
-    } else if (this.service.loc) {
-      this.displaycity = this.service.loc.lon + ',' + this.service.loc.lat;
-      this.tooltiplocation = this.displaycity;
-    }
-    this.cityname.text = this.displaycity || QWX_PLACEHOLDER;
-    let cityTip = this.displaycity || _('No Data Available');
-    if (this.service.data.errors && this.service.data.errors.meta) cityTip += '\n' + this.service.data.errors.meta;
-    this.citytooltip.set_text(cityTip);
-    let linkTip = _('Click for the full forecast for %s').format(this.tooltiplocation || this.displaycity || QWX_PLACEHOLDER);
-    if (this.cwicontooltip) this.cwicontooltip.set_text(linkTip);
-    if (this.bannertooltip) this.bannertooltip.set_text(linkTip);
-    this._updateNotice();
-  },
-
-  _styleTextActor: function (actor, size, extra) {
-    if (!actor) return;
-    let align = actor._qweatherAlign || 'left';
-    actor.style = 'font-size: ' + this._scale(size) + 'px;text-align: ' + align + ';' + (extra || '');
-  },
-
-  _styleButtonText: function (button, size, extra) {
-    if (!button) return;
-    let child = button.get_child ? button.get_child() : null;
-    if (child) {
-      let align = child._qweatherAlign || 'left';
-      child.style = 'font-size: ' + this._scale(size) + 'px;text-align: ' + align + ';' + (extra || '');
-    }
-  },
-
-  _update_style: function () {
-    if (!this.window) return;
-    this.window.width = this._rootWidth();
-    if (this.overrideTheme) {
-      if (this._header) this._header.hide();
-      this.window.set_style_class_name('desklet qweather-root');
-      let background = (this.bgcolor.replace(')', ',' + this.transparency + ')')).replace('rgb', 'rgba');
-      let rootStyle = 'padding: ' + this._scale(QWX_ROOT_PADDING) + 'px;spacing: ' + this._scale(QWX_SECTION_GAP) + 'px;background-color: ' + background + ';color: ' + this.textcolor + ';';
-      if (this.border) {
-        let borderradius = (this.borderwidth > this.cornerradius) ? this.borderwidth : this.cornerradius;
-        rootStyle += 'border: ' + this.borderwidth + 'px solid ' + this.bordercolor + ';border-radius: ' + borderradius + 'px;';
-      } else rootStyle += 'border-radius: ' + this.cornerradius + 'px;';
-      if (this.textshadow) rootStyle += 'text-shadow: 1px 1px ' + this.shadowblur + 'px ' + contrastingColor(this.textcolor) + ';';
-      this.window.style = rootStyle;
-    } else {
-      let dec = global.settings.get_int('desklet-decorations');
-      switch (dec) {
-        case 0: if (this._header) this._header.hide(); this.window.set_style_class_name('desklet qweather-root'); break;
-        case 1: if (this._header) this._header.hide(); this.window.set_style_class_name('desklet-with-borders qweather-root'); break;
-        case 2: if (this._header) this._header.show(); this.window.set_style_class_name('desklet-with-borders-and-header qweather-root'); break;
-      }
-      this.window.style = 'padding: ' + this._scale(QWX_ROOT_PADDING) + 'px;spacing: ' + this._scale(QWX_SECTION_GAP) + 'px;';
-    }
-    this._styleTextActor(this.cityname, QWX_TEXT_SIZE, 'font-weight: ' + (this.citystyle ? 'bold' : 'normal') + ';');
-    this._styleButtonText(this.bannerupdated, QWX_LINK_TEXT_SIZE, '');
-    this._styleTextActor(this.currenttemp, QWX_CC_TEXT_SIZE, 'font-weight: 600;');
-    this._styleTextActor(this.weathertext, QWX_WEATHER_TEXT_SIZE, '');
-    this._styleTextActor(this.hourlyTitle, QWX_SECTION_TEXT_SIZE, 'font-weight: bold;');
-    this._styleTextActor(this.forecastTitle, QWX_SECTION_TEXT_SIZE, 'font-weight: bold;');
-    this._styleTextActor(this.noticeLabel, QWX_TEXT_SIZE, '');
-    this._styleTextActor(this.noticeCount, QWX_LABEL_TEXT_SIZE, 'font-weight: bold;');
-    this._styleTextActor(this.bannerpre, QWX_LINK_TEXT_SIZE, '');
-    this._styleButtonText(this.banner, QWX_LINK_TEXT_SIZE, '');
-    this._styleButtonText(this.bannerpost, QWX_LINK_TEXT_SIZE, '');
-    for (let key in this.metricValues) if (key !== 'airquality') this._styleTextActor(this.metricValues[key], QWX_TEXT_SIZE, 'font-weight: 600;');
-    for (let key in this.metricCaptions) this._styleTextActor(this.metricCaptions[key], QWX_LABEL_TEXT_SIZE, '');
-    for (let h = 0; h < this.hourlySlots.length; h++) {
-      this._styleTextActor(this.hourlySlots[h].time, QWX_LABEL_TEXT_SIZE, '');
-      this._styleTextActor(this.hourlySlots[h].temp, QWX_TEXT_SIZE, 'font-weight: 600;');
-    }
-    for (let f = 0; f < this.forecastRows.length; f++) {
-      this._styleTextActor(this.forecastRows[f].day, QWX_TEXT_SIZE, 'font-weight: 600;');
-      this._styleTextActor(this.forecastRows[f].temp, QWX_TEXT_SIZE, 'font-weight: 600;');
-      this._styleTextActor(this.forecastRows[f].detail, QWX_LABEL_TEXT_SIZE, '');
-    }
-    this.iconbutton.icon_size = this._scale(QWX_REFRESH_ICON_SIZE);
-    if (this.airquality && this.service && this.service.data) {
-      let air = this.service.data.air || {};
-      let airColor = air.color ? air.color : this.textcolor;
-      this.airquality.style = 'font-size: ' + this._scale(QWX_TEXT_SIZE) + 'px;font-weight: bold;' + (airColor ? 'color: ' + airColor + ';' : '');
-    }
-    this._updateNotice();
-  },
-
-  setGravity: function () {
-    if (this._removed || !this.actor) return;
-    if (this.experimental_enabled) this.actor.move_anchor_point_from_gravity(this.gravity);
-    else this.actor.move_anchor_point_from_gravity(0);
+  _setIcon: function (holder, code, height) {
+    if (!holder || !holder._qweatherBin) return;
+    holder._qweatherBin.set_child(code ? this._getIconImage(code, height, holder.width) : null);
   },
 
   _getIconImage: function (iconcode, h, maxWidth) {
-    if (typeof h === 'undefined') h = this._scale(QWX_ICON_HEIGHT);
-    let icon_name = '999';
-    let icon_ext = '.' + this.iconprops.ext;
-    if (iconcode) icon_name = (typeof this.iconprops.map[iconcode] !== 'undefined') ? this.iconprops.map[iconcode] : iconcode;
-    let dims = UIV2.iconDimensions(h, this.iconprops.aspect, this.iconprops.adjust);
-    let height = dims.height;
-    let width = dims.width;
-    let icon_file = this._deskletDir + '/icons/' + this.iconstyle + '/' + icon_name + icon_ext;
-    let file = Gio.file_new_for_path(icon_file);
-    if (!file.query_exists(null)) {
-      icon_name = (typeof this.defaulticonprops.map[iconcode] !== 'undefined') ? this.defaulticonprops.map[iconcode] : iconcode;
-      icon_file = this._deskletDir + '/icons/' + QWX_DEFAULT_ICONSET + '/' + icon_name + '.' + this.defaulticonprops.ext;
-      dims = UIV2.iconDimensions(h, this.defaulticonprops.aspect, this.defaulticonprops.adjust);
-      height = dims.height;
-      width = dims.width;
-      file = Gio.file_new_for_path(icon_file);
-      if (!file.query_exists(null)) {
-        icon_file = this._deskletDir + '/icons/' + QWX_DEFAULT_ICONSET + '/999.' + this.defaulticonprops.ext;
-        file = Gio.file_new_for_path(icon_file);
-      }
+    let props = this.iconprops; let iconName = iconcode || '999'; let mapped = props.map && typeof props.map[iconName] !== 'undefined' ? props.map[iconName] : iconName;
+    let file = Gio.file_new_for_path(this._deskletDir + '/icons/' + this.iconstyle + '/' + mapped + '.' + props.ext);
+    if (!file.query_exists(null)) { props = this.defaulticonprops; mapped = props.map && typeof props.map[iconName] !== 'undefined' ? props.map[iconName] : iconName; file = Gio.file_new_for_path(this._deskletDir + '/icons/' + QWX_DEFAULT_ICONSET + '/' + mapped + '.' + props.ext); }
+    if (!file.query_exists(null)) file = Gio.file_new_for_path(this._deskletDir + '/icons/' + QWX_DEFAULT_ICONSET + '/999.' + this.defaulticonprops.ext);
+    let d = UIV2.iconDimensions(h, props.aspect, props.adjust); let w = d.width; let hh = d.height;
+    if (maxWidth && w > maxWidth) { let r = maxWidth / w; w *= r; hh *= r; }
+    w = Math.max(1, Math.round(w)); hh = Math.max(1, Math.round(hh));
+    let img = St.TextureCache.get_default().load_uri_async(file.get_uri(), w, hh); img.set_size(w, hh); return img;
+  },
+
+  _createMetricCell: function (width) {
+    let cell = new St.BoxLayout({ vertical: true, style_class: 'qweather-metric' }); cell.width = width; cell.height = this._scale(50);
+    let k = this._boundedLabel('', width - this._scale(8), 'qweather-metric-k', 'center'); let v = this._boundedLabel('', width - this._scale(8), 'qweather-metric-v', 'center');
+    cell.add(k, { x_fill: false, x_align: St.Align.MIDDLE }); cell.add(v, { x_fill: false, x_align: St.Align.MIDDLE }); return { box: cell, key: k, value: v };
+  },
+
+  _metricSpecs: function () {
+    let cc = this.service && this.service.data ? (this.service.data.cc || {}) : {}; let air = this.service && this.service.data ? (this.service.data.air || {}) : {};
+    let specs = [];
+    if (this.display__cc__humidity) specs.push([this._ui('Humidity'), this._formatHumidity(cc.humidity)]);
+    if (this.display__cc__wind_speed) specs.push([this._ui('Wind'), this._formatWind(cc)]);
+    if (this.display__cc__uv) specs.push([this._ui('UV index'), cc.uv === '' ? '' : String(Math.round(cc.uv))]);
+    if (this.display__cc__pressure) specs.push([this._ui('Pressure'), this._formatPressure(cc.pressure, true)]);
+    if (this.display__cc__visibility) specs.push([this._ui('Visibility'), this._formatVisibility(cc.visibility, true)]);
+    if (this.display__cc__precip) specs.push([this._ui('Precipitation'), this._formatPrecip(cc.precip)]);
+    if (this.display__cc__aqi) specs.push([this._ui('Air quality'), air.display ? String(air.display) + (air.category ? ' ' + air.category : '') : '']);
+    let today = this.service && this.service.data && this.service.data.days ? this.service.data.days[0] : null;
+    if (this.display__cc__sun) specs.push([this._ui('Sunrise'), today ? today.sunrise : '']);
+    if (this.display__cc__sun) specs.push([this._ui('Sunset'), today ? today.sunset : '']);
+    if (this.display__cc__feelslike) specs.push([this._ui('Feels like'), this._formatTemperature(cc.feelslike, true)]);
+    return specs.slice(0, QWX_METRIC_COLUMNS * QWX_METRIC_ROWS);
+  },
+
+  _createWindow: function () {
+    if (this.window) try { this.window.destroy_all_children(); } catch (e) {}
+    this.hourlySlots = []; this.dailyRows = []; this.metricCells = [];
+    let w = this._contentWidth(); let gap = this._scale(6);
+    this.window = new St.BoxLayout({ vertical: true, style_class: 'qweather-root' }); this.window.width = this._rootWidth();
+    this.window.style = 'padding: ' + this._scale(QWX_ROOT_PAD_TOP) + 'px ' + this._scale(QWX_ROOT_PAD_X) + 'px ' + this._scale(12) + 'px; spacing: ' + this._scale(8) + 'px;';
+
+    this.alertBox = new St.BoxLayout({ vertical: true, style_class: 'qweather-alert' }); this.alertBox.width = w;
+    this.alertTitle = this._boundedLabel('', w - this._scale(20), 'qweather-alert-title', 'left'); this.alertBody = this._boundedLabel('', w - this._scale(20), 'qweather-alert-body', 'left');
+    this.alertBox.add(this.alertTitle); this.alertBox.add(this.alertBody); this.alertBox.hide(); this.window.add_actor(this.alertBox);
+
+    this.topBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-top' }); this.topBox.width = w;
+    this.bannerupdated = new St.Button({ label: '', style_class: 'qweather-updated' }); this.bannerupdated.width = w - this._scale(82);
+    this.refreshbutton = new St.Button({ label: '↻ ' + this._ui('Refresh'), style_class: 'qweather-refresh' }); this.refreshbutton.width = this._scale(76);
+    this.topBox.add(this.bannerupdated, { x_fill: false, x_align: St.Align.START }); this.topBox.add(this.refreshbutton, { x_fill: false, x_align: St.Align.END }); this.window.add_actor(this.topBox);
+
+    this.currentBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-current' }); this.currentBox.width = w;
+    let leftW = w - this._scale(86); let rightW = this._scale(76);
+    this.currentLeft = new St.BoxLayout({ vertical: true }); this.currentLeft.width = leftW;
+    this.currenttemp = this._boundedLabel('', leftW, 'qweather-temp', 'left'); this.weathertext = this._boundedLabel('', leftW, 'qweather-cond', 'left'); this.hilo = this._boundedLabel('', leftW, 'qweather-hilo', 'left');
+    this.currentLeft.add(this.currenttemp); this.currentLeft.add(this.weathertext); this.currentLeft.add(this.hilo);
+    this.currentRight = new St.BoxLayout({ vertical: true, style_class: 'qweather-current-right' }); this.currentRight.width = rightW;
+    this.cwicon = this._iconHolder(rightW, this._scale(58), 'qweather-current-icon'); this.feels = this._boundedLabel('', rightW, 'qweather-feels', 'right');
+    this.currentRight.add(this.cwicon, { x_fill: false, x_align: St.Align.END }); this.currentRight.add(this.feels, { x_fill: false, x_align: St.Align.END });
+    this.currentBox.add(this.currentLeft); this.currentBox.add(this.currentRight); this.window.add_actor(this.currentBox);
+
+    this.metricGrid = new St.Table({ style_class: 'qweather-metrics' }); this.metricGrid.width = w;
+    let cellW = Math.floor((w - gap * 2) / 3); this.metricGrid.style = 'spacing-columns: ' + gap + 'px; spacing-rows: ' + gap + 'px;';
+    for (let i = 0; i < QWX_METRIC_COLUMNS * QWX_METRIC_ROWS; i++) { let c = this._createMetricCell(cellW); this.metricCells.push(c); this.metricGrid.add(c.box, { row: Math.floor(i / 3), col: i % 3 }); }
+    this.window.add_actor(this.metricGrid);
+
+    this.hourlySection = new St.BoxLayout({ vertical: true }); this.hourlySection.width = w;
+    this.hourlyTitle = this._boundedLabel(this._ui('Hourly forecast'), w, 'qweather-sec', 'left'); this.hourlySection.add(this.hourlyTitle);
+    this.hourlyBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-hourly' }); this.hourlyBox.width = w; this.hourlyBox.style = 'spacing: ' + gap + 'px;';
+    let slotW = Math.floor((w - gap * 5) / 6);
+    for (let h = 0; h < QWX_HOURLY_COUNT; h++) {
+      let box = new St.BoxLayout({ vertical: true, style_class: 'qweather-hour' }); box.width = slotW; box.height = this._scale(72);
+      let time = this._boundedLabel('', slotW - this._scale(4), 'qweather-hour-h', 'center'); let icon = this._iconHolder(slotW - this._scale(4), this._scale(26), 'qweather-hour-icon'); let temp = this._boundedLabel('', slotW - this._scale(4), 'qweather-hour-t', 'center');
+      box.add(time, { x_fill: false, x_align: St.Align.MIDDLE }); box.add(icon, { x_fill: false, x_align: St.Align.MIDDLE }); box.add(temp, { x_fill: false, x_align: St.Align.MIDDLE });
+      let tooltip = new Tooltips.Tooltip(icon); this.hourlySlots.push({ box: box, time: time, icon: icon, temp: temp, tooltip: tooltip }); this.hourlyBox.add(box);
     }
-    if (maxWidth && width > maxWidth) {
-      let ratio = maxWidth / width;
-      width = maxWidth;
-      height = height * ratio;
+    this.hourlySection.add(this.hourlyBox); if (this.display__hourly) this.window.add_actor(this.hourlySection);
+
+    this.dailySection = new St.BoxLayout({ vertical: true, style_class: 'qweather-daily' }); this.dailySection.width = w;
+    this.dailyTitle = this._boundedLabel(UIV2.dayCountTitle(this.lang || 'auto', GLib.get_language_names(), this.no), w, 'qweather-sec', 'left'); this.dailySection.add(this.dailyTitle);
+    for (let f = 0; f < this.no; f++) {
+      let row = new St.BoxLayout({ vertical: false, style_class: 'qweather-day' }); row.width = w; row.height = this._scale(42);
+      let dayBlock = new St.BoxLayout({ vertical: true }); dayBlock.width = this._scale(70);
+      let dayLabel = this._boundedLabel('', this._scale(70), 'qweather-day-name', 'left'); let dateLabel = this._boundedLabel('', this._scale(70), 'qweather-day-date', 'left'); dayBlock.add(dayLabel); dayBlock.add(dateLabel);
+      let icon = this._iconHolder(this._scale(34), this._scale(30), 'qweather-day-icon'); let temps = this._boundedLabel('', w - this._scale(112), 'qweather-day-temps', 'right');
+      row.add(dayBlock); row.add(icon, { x_fill: false, x_align: St.Align.MIDDLE }); row.add(temps, { x_fill: false, x_align: St.Align.END });
+      let tooltip = new Tooltips.Tooltip(icon); this.dailyRows.push({ box: row, dayLabel: dayLabel, dateLabel: dateLabel, dayDate: dateLabel, icon: icon, temps: temps, tooltip: tooltip }); this.dailySection.add(row);
     }
-    width = Math.max(1, Math.round(width));
-    height = Math.max(1, Math.round(height));
-    let icon_uri = file.get_uri();
-    let iconimg = St.TextureCache.get_default().load_uri_async(icon_uri, width, height);
-    iconimg.set_size(width, height);
-    return iconimg;
+    this.window.add_actor(this.dailySection);
+
+    this.sourceBox = new St.BoxLayout({ vertical: false, style_class: 'qweather-source' }); this.sourceBox.width = w;
+    this.banner = new St.Button({ label: this._ui('Data source') + ': QWeather', style_class: 'qweather-source-button' }); this.banner.width = w;
+    this.bannerpost = new St.Button({ label: ' ' }); this.bannerpost.hide(); this.sourceBox.add(this.banner); this.window.add_actor(this.sourceBox);
+    this.bannertooltip = new Tooltips.Tooltip(this.banner); this.cityname = this._boundedLabel('', 1, '', 'left'); this.citytooltip = new Tooltips.Tooltip(this.cityname);
+    this.setContent(this.window);
+    this.refreshsig = this.refreshbutton.connect('clicked', Lang.bind(this, this._refreshweathers));
+    this.bannersig = this.banner.connect('clicked', Lang.bind(this, function () { this.launcher.spawnv(['xdg-open', QWX_WEBSITE]); }));
   },
 
-  _formatTemperature: function (temp, units) {
-    units = typeof units !== 'undefined' ? units : false;
-    if (typeof temp === 'undefined' || temp === null || temp === '') return '';
-    if (!temp.toString().length) return '';
-    let celsius = 1 * temp;
-    let fahr = (celsius * 1.8) + 32;
-    let out = Math.round((this.tunits == 'F') ? fahr : celsius);
-    let fahrfmt = _('%f\u00b0F');
-    let celfmt = _('%f\u00b0C');
-    if (units) out = (this.tunits == 'F') ? fahrfmt.format(out) : celfmt.format(out);
-    return out;
+  displayCurrent: function () {
+    if (!this.service || !this.service.data) return;
+    let cc = this.service.data.cc || {}; let days = this.service.data.days || []; let today = days[0] || {};
+    this.currenttemp.text = this._placeholder(this._formatTemperature(cc.temperature, false) + (cc.temperature === '' ? '' : '°'));
+    this.weathertext.text = this._placeholder(cc.weathertext);
+    let hi = this._formatTemperature(today.maximum_temperature, false), lo = this._formatTemperature(today.minimum_temperature, false);
+    this.hilo.text = (hi !== '' || lo !== '') ? (this._ui('Today') + '  ' + (hi !== '' ? hi + '°' : QWX_PLACEHOLDER) + ' · ' + (lo !== '' ? lo + '°' : QWX_PLACEHOLDER)) : QWX_PLACEHOLDER;
+    this.feels.text = this._ui('Feels like') + ' ' + this._placeholder(this._formatTemperature(cc.feelslike, false) + (cc.feelslike === '' ? '' : '°'));
+    this._setIcon(this.cwicon, cc.icon, this._scale(QWX_CURRENT_ICON));
+    let specs = this._metricSpecs();
+    for (let i = 0; i < this.metricCells.length; i++) { let s = specs[i]; this.metricCells[i].key.text = s ? s[0] : ''; this.metricCells[i].value.text = s ? this._placeholder(s[1]) : ''; if (s) this.metricCells[i].box.show(); else this.metricCells[i].box.hide(); }
+    this.displayWarning();
   },
 
-  _formatWindValue: function (wind, scale, units) {
-    if (this.windscale) {
-      if (scale === '' || typeof scale === 'undefined' || scale === null) return '';
-      return _('Force %s').format(scale);
+  displayHourly: function () {
+    if (!this.display__hourly || !this.hourlySlots.length) return;
+    let hours = this.service && this.service.data ? (this.service.data.hours || []) : [];
+    for (let h = 0; h < QWX_HOURLY_COUNT; h++) {
+      let slot = this.hourlySlots[h], hour = hours[h] || null;
+      slot.time.text = hour ? UIV2.hourText(this.lang || 'auto', GLib.get_language_names(), hour.time, h === 0) : QWX_PLACEHOLDER;
+      slot.temp.text = hour ? this._placeholder(this._formatTemperature(hour.temperature, false) + (hour.temperature === '' ? '' : '°')) : QWX_PLACEHOLDER;
+      this._setIcon(slot.icon, hour ? hour.icon : '', this._scale(QWX_HOURLY_ICON));
+      slot.tooltip.set_text(hour ? ((hour.weathertext || this._ui('No data')) + '\n' + this._ui('Feels like') + ': ' + this._placeholder(this._formatTemperature(hour.feelslike, true)) + '\n' + this._ui('Wind') + ': ' + this._placeholder(this._formatWind(hour))) : this._ui('No data'));
     }
-    return this._formatWindspeed(wind, units);
   },
 
-  _formatWind: function (obj) {
-    if (!obj) return '';
-    let dir = obj.wind_direction ? obj.wind_direction : '';
-    let val = this._formatWindValue(obj.wind_speed, obj.wind_scale, true);
-    if (dir && val) return dir + ' ' + val;
-    return dir ? dir : val;
+  _forecastDayDate: function (day) { if (!day || !day.date) return ''; let s = String(day.date); return s.length >= 10 ? s.substring(5, 10) : s; },
+  displayForecast: function () {
+    let days = this.service && this.service.data ? (this.service.data.days || []) : [];
+    for (let f = 0; f < this.dailyRows.length; f++) {
+      let row = this.dailyRows[f], day = days[f];
+      if (!day) { row.dayLabel.text = f === 0 ? this._ui('Today') : QWX_PLACEHOLDER; row.dateLabel.text = ''; row.temps.text = QWX_PLACEHOLDER; this._setIcon(row.icon, '', this._scale(QWX_DAILY_ICON)); continue; }
+      row.dayLabel.text = f === 0 ? this._ui('Today') : (f === 1 ? this._ui('Tomorrow') : UIV2.weekdayText(this.lang || 'auto', GLib.get_language_names(), day.day));
+      row.dateLabel.text = this._forecastDayDate(day);
+      let hi = this._formatTemperature(day.maximum_temperature, false), lo = this._formatTemperature(day.minimum_temperature, false); row.temps.text = this._placeholder((hi !== '' ? hi + '°' : QWX_PLACEHOLDER) + ' / ' + (lo !== '' ? lo + '°' : QWX_PLACEHOLDER));
+      this._setIcon(row.icon, day.icon, this._scale(QWX_DAILY_ICON));
+      let tip = day.weathertext || this._ui('No data'); if (day.textNight && day.textNight !== day.weathertext) tip += ' / ' + day.textNight; let details = this._forecastDetailText(day); if (details) tip += '\n' + details; row.tooltip.set_text(tip);
+    }
+    this.displayCurrent();
   },
 
-  _formatWindspeed: function (wind, units) {
-    units = typeof units !== 'undefined' ? units : false;
-    if (typeof wind === 'undefined' || wind === null || wind === '') return '';
-    let conversion = { mph: 0.621, knots: 0.54, kph: 1, mps: 0.278 };
-    let unitstring = { mph: _('%fmph'), knots: _('%fkn'), kph: _('%fkm/h'), mps: _('%fm/s') };
-    let out = ((1 * wind) * conversion[this.wunits]).toFixed(0);
-    if (units) out = unitstring[this.wunits].format(out);
-    return out;
+  _forecastDetailText: function (day) {
+    let parts = []; if (this.display__forecast__wind_direction && day.wind_direction) parts.push(day.wind_direction); if (this.display__forecast__wind_speed) { let w = this._formatWindValue(day.wind_speed, day.wind_scale, true); if (w) parts.push(w); }
+    if (this.display__forecast__uv && day.uv !== '') parts.push(this._ui('UV index') + ' ' + Math.round(day.uv)); if (this.display__forecast__precip && day.precip !== '') parts.push(this._formatPrecip(day.precip)); return parts.join(' · ');
   },
 
-  _formatPressure: function (pressure, units) {
-    units = typeof units !== 'undefined' ? units : false;
-    if (typeof pressure === 'undefined' || pressure === null || pressure === '') return '';
-    let conversion = { mb: 1, in: 0.02953, mm: 0.75, kpa: 0.1 };
-    let unitstring = { mb: _('%fmb'), in: _('%fin'), mm: _('%fmm'), kpa: _('%fkPa') };
-    let precision = { mb: 0, in: 2, mm: 0, kpa: 1 };
-    let out = ((1 * pressure) * conversion[this.punits]).toFixed(precision[this.punits]);
-    if (units) out = unitstring[this.punits].format(out);
-    return out;
+  displayWarning: function () {
+    if (!this.alertBox) return; let errors = this.service && this.service.data ? (this.service.data.errors || {}) : {}; let err = errors.meta || errors.cc || errors.forecast || (this.display__hourly ? errors.hourly : false) || (this.display__warning ? errors.warning : false);
+    if (err) { this.alertTitle.text = '⚠ ' + this._ui('Update failed'); this.alertBody.text = String(err); this.alertBox.set_style_class_name('qweather-alert qweather-alert-error'); this.alertBox.show(); return; }
+    let warnings = this.service && this.service.data ? (this.service.data.warnings || []) : [];
+    if (this.display__warning && warnings.length) { let w = warnings[0] || {}; this.alertTitle.text = '⚠ ' + (w.title || this._ui('Weather alert')); this.alertBody.text = w.text || ''; this.alertBox.set_style_class_name('qweather-alert qweather-alert-warning'); this.alertBox.show(); return; }
+    this.alertTitle.text = this._ui('No active alerts'); this.alertBody.text = ''; this.alertBox.hide();
   },
 
-  _formatHumidity: function (humidity) {
-    if (typeof humidity === 'undefined' || humidity === null || humidity === '') return '';
-    return (1 * humidity).toFixed(0) + '%';
+  displayMeta: function () {
+    if (!this.service || !this.service.data) return;
+    let loc = this.manuallocation ? String(this.manuallocation) : (this.service.data.city || '');
+    let tip = loc || this._ui('No data'); if (this.service.data.region && this.display__meta__region) tip += ', ' + this.service.data.region; if (this.service.data.country && this.display__meta__country) tip += ', ' + this.service.data.country;
+    if (this.citytooltip) this.citytooltip.set_text(tip); this.banner.label = this._ui('Data source') + ': QWeather';
   },
 
-  _formatVisibility: function (vis, units) {
-    units = typeof units !== 'undefined' ? units : false;
-    if (typeof vis === 'undefined' || vis === null || vis === '') return '';
-    let conversion = { mph: 0.621, knots: 0.54, kph: 1, mps: 1 };
-    let unitstring = { mph: _('%fmi'), knots: _('%fnmi'), kph: _('%fkm'), mps: _('%fkm') };
-    let out = (1 * vis) * conversion[this.wunits];
-    out = out.toFixed(out < 4 ? 1 : 0);
-    if (units) out = unitstring[this.wunits].format(out);
-    return out;
-  },
+  _setLastUpdated: function () { this.currentTime = new Date(); this.lastupdated = this.currentTime.toLocaleFormat('%H:%M'); if (this.bannerupdated) this.bannerupdated.label = this._ui('Updated') + ' ' + this.lastupdated; },
+  _refreshweathers: function () { if (this._removed || !this.service) return; this._setLastUpdated(); this.service.refreshData(this); this._doLoop(); },
+  _doLoop: function () { if (this._timeoutId) Mainloop.source_remove(this._timeoutId); this._timeoutId = Mainloop.timeout_add_seconds(this.refreshSec, Lang.bind(this, this._refreshweathers)); },
+  changeRefresh: function () { if (!this._removed) { this._setDerivedValues(); this._doLoop(); } },
+  changeService: function () { if (!this._removed) this.initForecast(); },
+  redrawRefetch: function () { if (!this._removed) { this.redraw(); this._refreshweathers(); } },
+  structureChange: function () { if (this._removed) return; if (this._structureTimerId) Mainloop.source_remove(this._structureTimerId); this._structureTimerId = Mainloop.timeout_add(120, Lang.bind(this, function () { this._structureTimerId = null; this.redraw(); return false; })); },
+  displayOptsChange: function () { if (!this._removed) { this.redraw(); this._refreshweathers(); } },
+  iconStyleChange: function () { if (!this._removed) { this._initIcons(); this.displayCurrent(); this.displayHourly(); this.displayForecast(); } },
+  onUnitChange: function () { if (!this._removed) { this.displayCurrent(); this.displayHourly(); this.displayForecast(); } },
+  redraw: function () { if (this._removed) return; this._setDerivedValues(); this._createWindow(); this.updateStyle(); this.displayCurrent(); this.displayHourly(); this.displayForecast(); this.displayWarning(); this.displayMeta(); },
 
-  _formatPrecip: function (precip) {
-    if (typeof precip === 'undefined' || precip === null || precip === '') return '';
-    return _('%fmm').format((1 * precip).toFixed(1));
+  updateStyle: function () {
+    if (!this.window) return; this.window.width = this._rootWidth();
+    if (this.overrideTheme) {
+      let bg = (this.bgcolor || 'rgb(18,26,46)').replace(')', ',' + this.transparency + ')').replace('rgb', 'rgba');
+      let s = 'padding:' + this._scale(QWX_ROOT_PAD_TOP) + 'px ' + this._scale(QWX_ROOT_PAD_X) + 'px ' + this._scale(12) + 'px;background-color:' + bg + ';color:' + (this.textcolor || '#eef3ff') + ';border-radius:' + (this.cornerradius || 14) + 'px;';
+      if (this.border) s += 'border:' + (this.borderwidth || 1) + 'px solid ' + (this.bordercolor || 'rgba(255,255,255,0.14)') + ';'; this.window.style = s;
+    }
   },
+  setGravity: function () { if (!this._removed && this.actor) this.actor.move_anchor_point_from_gravity(this.experimental_enabled ? this.gravity : 0); },
 
-  on_desklet_removed: function () {
-    if (this._timeoutId) { Mainloop.source_remove(this._timeoutId); this._timeoutId = null; }
-    if (this._structureTimerId) { Mainloop.source_remove(this._structureTimerId); this._structureTimerId = null; }
-    if (this._displayTimerId) { Mainloop.source_remove(this._displayTimerId); this._displayTimerId = null; }
-    if (this._globalSettingsSignalId) { global.settings.disconnect(this._globalSettingsSignalId); this._globalSettingsSignalId = null; }
-    this._disconnectWindowSignals();
-    this._removed = true;
-  }
+  _formatTemperature: function (temp, units) { if (temp === '' || temp === null || typeof temp === 'undefined') return ''; let c = Number(temp), v = this.tunits === 'F' ? Math.round(c * 1.8 + 32) : Math.round(c); return units ? v + '°' + (this.tunits === 'F' ? 'F' : 'C') : String(v); },
+  _formatHumidity: function (v) { return (v === '' || v === null || typeof v === 'undefined') ? '' : Math.round(Number(v)) + '%'; },
+  _formatWindValue: function (wind, scale, units) { if (this.windscale) return scale === '' || scale === null || typeof scale === 'undefined' ? '' : String(scale); return this._formatWindspeed(wind, units); },
+  _formatWind: function (o) { if (!o) return ''; let d = o.wind_direction || '', v = this._formatWindValue(o.wind_speed, o.wind_scale, true); return d && v ? d + ' ' + v : (d || v); },
+  _formatWindspeed: function (wind, units) { if (wind === '' || wind === null || typeof wind === 'undefined') return ''; let conv = { mph: 0.621, knots: 0.54, kph: 1, mps: 0.278 }, names = { mph: 'mph', knots: 'kn', kph: 'km/h', mps: 'm/s' }; let v = (Number(wind) * (conv[this.wunits] || 1)).toFixed(1).replace(/\.0$/, ''); return units ? v + ' ' + (names[this.wunits] || 'km/h') : v; },
+  _formatPressure: function (p, units) { if (p === '' || p === null || typeof p === 'undefined') return ''; let conv = { mb: 1, in: 0.02953, mm: 0.75, kpa: 0.1 }, names = { mb: 'hPa', in: 'in', mm: 'mm', kpa: 'kPa' }, prec = { mb: 0, in: 2, mm: 0, kpa: 1 }; let key = this.punits || 'mb', v = (Number(p) * (conv[key] || 1)).toFixed(prec[key] || 0); return units ? v + ' ' + (names[key] || 'hPa') : v; },
+  _formatVisibility: function (v, units) { if (v === '' || v === null || typeof v === 'undefined') return ''; let out = Number(v); if (this.wunits === 'mph') out *= 0.621; let s = out.toFixed(out < 4 ? 1 : 0); return units ? s + (this.wunits === 'mph' ? ' mi' : ' km') : s; },
+  _formatPrecip: function (v) { return (v === '' || v === null || typeof v === 'undefined') ? '' : Number(v).toFixed(1).replace(/\.0$/, '') + ' mm'; },
+
+  on_desklet_removed: function () { if (this._timeoutId) Mainloop.source_remove(this._timeoutId); if (this._structureTimerId) Mainloop.source_remove(this._structureTimerId); if (this._globalSettingsSignalId) global.settings.disconnect(this._globalSettingsSignalId); this._removed = true; }
 };
 
-function contrastingColor(color) {
-  return (luma(color) >= 165) ? '#000000' : '#ffffff';
-}
-
-function luma(color) {
-  let hex = rgb2hex(color);
-  let r = parseInt(hex.slice(0, 2), 16);
-  let g = parseInt(hex.slice(2, 4), 16);
-  let b = parseInt(hex.slice(4, 6), 16);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function rgb2hex(rgb) {
-  let match = ('' + rgb).match(/rgba?\(([^)]+)\)/i);
-  if (!match) return '000000';
-  let hex = match[1].split(',').slice(0, 3).map(function (hexCol) {
-    hexCol = parseInt(hexCol).toString(16);
-    return (hexCol.length == 1) ? '0' + hexCol : hexCol;
-  });
-  return hex.join('');
-}
-
-function main(metadata, desklet_id) {
-  return new MyDesklet(metadata, desklet_id);
-}
+function main(metadata, desklet_id) { return new MyDesklet(metadata, desklet_id); }
