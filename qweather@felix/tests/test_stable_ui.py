@@ -32,19 +32,10 @@ class HtmlRedesignSourceTests(unittest.TestCase):
         self.assertNotIn("const QWX_VERTICAL_WIDTH = 420;", self.source)
 
     def test_layout_has_mockup_sections(self):
-        for token in (
-            "qweather-alert",
-            "qweather-top",
-            "qweather-current",
-            "qweather-metrics",
-            "qweather-hourly",
-            "qweather-daily",
-            "qweather-source",
-        ):
+        for token in ("qweather-alert", "qweather-top", "qweather-current", "qweather-metrics", "qweather-hourly", "qweather-daily", "qweather-source"):
             self.assertIn(token, self.source)
 
     def test_icon_holder_prevents_container_stretching(self):
-        self.assertIn("_iconHolder: function", self.source)
         body = self.method_body("_iconHolder")
         self.assertIn("x_fill: false", body)
         self.assertIn("y_fill: false", body)
@@ -53,6 +44,7 @@ class HtmlRedesignSourceTests(unittest.TestCase):
     def test_six_hourly_slots_are_persistent(self):
         self.assertRegex(self.source, r"for \(let h = 0; h < QWX_HOURLY_COUNT; h\+\+\)")
         body = self.method_body("displayHourly")
+        self.assertIn("UIV2.hourText", body)
         self.assertNotIn("_createWindow()", body)
         self.assertNotIn("redraw()", body)
 
@@ -68,16 +60,7 @@ class HtmlRedesignSourceTests(unittest.TestCase):
         self.assertNotIn("row.detail.text", body)
 
     def test_visible_structural_copy_uses_ui_helper(self):
-        for key in (
-            "Now",
-            "Today",
-            "Tomorrow",
-            "Refresh",
-            "No active alerts",
-            "Update failed",
-            "Weather alert",
-            "Data source",
-        ):
+        for key in ("Today", "Tomorrow", "Refresh", "No active alerts", "Update failed", "Weather alert", "Data source"):
             self.assertIn(f"this._ui('{key}')", self.source)
 
     def test_refresh_display_methods_are_geometry_neutral(self):
@@ -94,6 +77,7 @@ class HtmlRedesignSourceTests(unittest.TestCase):
         body = self.method_body("displayMeta")
         self.assertNotIn("attribution.url", body)
         self.assertNotIn("a.url", body)
+        self.assertIn("QWeather", body)
 
 
 if __name__ == "__main__":
