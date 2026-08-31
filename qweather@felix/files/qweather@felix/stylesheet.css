@@ -1,144 +1,181 @@
 .qweather-root {
-  spacing: 10px;
-}
-
-.qweather-header {
   spacing: 8px;
+  background-color: rgba(18, 26, 46, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  color: #eef3ff;
 }
 
-.qweather-city {
-  font-weight: 600;
+.qweather-alert {
+  spacing: 3px;
+  padding: 8px 10px;
+  border-radius: 10px;
 }
 
-.qweather-updated,
-.qweather-footer-meta {
+.qweather-alert-warning {
+  background-color: rgba(255, 122, 89, 0.16);
+  border: 1px solid rgba(255, 122, 89, 0.40);
+}
+
+.qweather-alert-error {
+  background-color: rgba(220, 80, 80, 0.16);
+  border: 1px solid rgba(220, 80, 80, 0.38);
+}
+
+.qweather-alert-title {
+  color: #ffd0c2;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.qweather-alert-body {
+  color: rgba(238, 243, 255, 0.82);
+  font-size: 10.5px;
+}
+
+.qweather-top {
+  spacing: 6px;
+}
+
+.qweather-updated {
   background-color: transparent;
   border: 0;
   padding: 0;
+  color: rgba(238, 243, 255, 0.55);
+  font-size: 10px;
+  text-align: left;
 }
 
-.qweather-card {
-  background-color: rgba(127, 127, 127, 0.10);
-  border-radius: 12px;
+.qweather-refresh {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: #eef3ff;
+  font-size: 10.5px;
 }
 
-.qweather-current-content,
-.qweather-current-summary,
-.qweather-current-text {
-  spacing: 8px;
+.qweather-refresh:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.qweather-current {
+  spacing: 10px;
+}
+
+.qweather-temp {
+  font-size: 46px;
+  font-weight: 300;
+}
+
+.qweather-cond {
+  font-size: 13px;
+}
+
+.qweather-hilo {
+  color: rgba(238, 243, 255, 0.70);
+  font-size: 11px;
+}
+
+.qweather-current-right {
+  spacing: 4px;
 }
 
 .qweather-current-icon,
 .qweather-hour-icon,
-.qweather-forecast-icon {
+.qweather-day-icon {
   background-color: transparent;
   border: 0;
   padding: 0;
 }
 
-.qweather-current-temp {
+.qweather-feels {
+  color: rgba(238, 243, 255, 0.55);
+  font-size: 10px;
+}
+
+.qweather-metrics {
+  spacing-columns: 6px;
+  spacing-rows: 6px;
+}
+
+.qweather-metric {
+  spacing: 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 7px 4px;
+}
+
+.qweather-metric-k {
+  color: rgba(238, 243, 255, 0.55);
+  font-size: 9.5px;
+}
+
+.qweather-metric-v {
+  font-size: 13px;
   font-weight: 600;
 }
 
-.qweather-current-description {
-  font-weight: normal;
-}
-
-.qweather-metric-grid {
-  spacing-rows: 8px;
-  spacing-columns: 8px;
-}
-
-.qweather-metric-cell {
-  background-color: rgba(127, 127, 127, 0.08);
-  border-radius: 9px;
-}
-
-.qweather-metric-caption {
-  font-weight: normal;
-}
-
-.qweather-metric-value {
-  font-weight: 600;
-}
-
-.qweather-section-title {
-  font-weight: bold;
-}
-
-.qweather-notice {
-  border-radius: 9px;
-  padding: 0 8px;
-}
-
-.qweather-notice-muted {
-  background-color: rgba(127, 127, 127, 0.08);
-}
-
-.qweather-notice-error {
-  background-color: rgba(190, 70, 70, 0.24);
-}
-
-.qweather-notice-warning {
-  background-color: rgba(190, 70, 45, 0.86);
-}
-
-.qweather-notice-count {
-  font-weight: bold;
+.qweather-sec {
+  color: rgba(238, 243, 255, 0.50);
+  font-size: 10px;
 }
 
 .qweather-hourly {
-  spacing: 4px;
+  spacing: 6px;
 }
 
-.qweather-hourly-slot {
-  background-color: rgba(127, 127, 127, 0.07);
-  border-radius: 9px;
+.qweather-hour {
+  spacing: 2px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 6px 2px;
 }
 
-.qweather-hour-time {
-  font-weight: normal;
+.qweather-hour-h {
+  color: rgba(238, 243, 255, 0.75);
+  font-size: 10px;
 }
 
-.qweather-hour-temp {
+.qweather-hour-t {
+  font-size: 12px;
   font-weight: 600;
 }
 
-.qweather-forecast-row {
-  background-color: rgba(127, 127, 127, 0.06);
-  border-radius: 8px;
+.qweather-daily {
+  spacing: 0;
 }
 
-.qweather-forecast-day,
-.qweather-forecast-temp {
-  font-weight: 600;
+.qweather-day {
+  spacing: 8px;
+  padding: 5px 2px;
 }
 
-.qweather-forecast-detail {
-  font-weight: normal;
+.qweather-day-name {
+  font-size: 11px;
 }
 
-.qweather-footer {
-  spacing: 4px;
+.qweather-day-date {
+  color: rgba(238, 243, 255, 0.50);
+  font-size: 9px;
 }
 
-.qweather-link {
+.qweather-day-temps {
+  font-size: 11.5px;
+}
+
+.qweather-source {
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  padding-top: 6px;
+}
+
+.qweather-source-button {
   background-color: transparent;
   border: 0;
   padding: 0;
-  text-decoration: underline;
-}
-
-.qweather-link:hover {
-  text-decoration: none;
-}
-
-.qweather-refresh {
-  background-color: rgba(127, 127, 127, 0.10);
-  border-radius: 7px;
-  padding: 3px;
-}
-
-.qweather-refresh:hover {
-  background-color: rgba(127, 127, 127, 0.20);
+  color: rgba(238, 243, 255, 0.40);
+  font-size: 9px;
+  text-align: left;
 }
